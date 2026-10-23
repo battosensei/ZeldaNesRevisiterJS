@@ -38,7 +38,14 @@ jobs:
           curl -fL --retry 5 --retry-delay 2 "$BASE/loader.js" -o "$DATA/loader.js"
           curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.js" -o "$DATA/emulator.min.js"
           curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.css" -o "$DATA/emulator.min.css"
-          curl -fL --retry 5 --retry-delay 2 "$BASE/cores/mgba-wasm.data" -o "$DATA/cores/mgba-wasm.data"
+          for CORE in \
+            mgba-wasm.data \
+            mgba-legacy-wasm.data \
+            mgba-thread-wasm.data \
+            mgba-thread-legacy-wasm.data
+          do
+            curl -fL --retry 5 --retry-delay 2 "$BASE/cores/$CORE" -o "$DATA/cores/$CORE"
+          done
           truncate -s 8388608 aw2apk/app/src/main/assets/www/game.gba
 
       - name: Build unsigned release APK

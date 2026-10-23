@@ -6,29 +6,23 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 	<title>ZeldaJavaScriptRevisited</title>
   <style id="mobile-ui-style">
-:root{--control-alpha:.46}
+:root{--control-alpha:.22}
 *{box-sizing:border-box;-webkit-text-size-adjust:none;text-size-adjust:none}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;overscroll-behavior:none}
 body{display:flex;align-items:center;justify-content:center;font-family:monospace}
 #game-shell{position:relative;width:min(100vw,calc(100vh * 1.0666667));height:min(100vh,calc(100vw / 1.0666667));display:flex;align-items:center;justify-content:center}
 #myCanvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;max-width:100%;max-height:100%;width:auto;height:auto}
 #mobile-controls{position:fixed;inset:0;pointer-events:none;z-index:50;user-select:none;-webkit-user-select:none}
-#mobile-controls button{pointer-events:auto;position:absolute;margin:0;padding:0;border:1px solid rgba(255,255,255,.45);background:rgba(0,0,0,var(--control-alpha));color:#fff;font:bold 11px monospace;line-height:1;border-radius:7px;touch-action:none;-webkit-tap-highlight-color:transparent;box-shadow:none}
-#mobile-controls button:active,#mobile-controls button.pressed{background:rgba(255,255,255,.24)}
-.dpad{width:24px;height:24px;font-size:12px!important}
-.up{left:38px;bottom:58px}.down{left:38px;bottom:8px}.left{left:12px;bottom:33px}.right{left:64px;bottom:33px}
-.action{width:31px;height:31px;border-radius:50%!important;font-size:13px!important}
-.btn-a{right:12px;bottom:43px}.btn-b{right:49px;bottom:9px}
-.system{height:19px;font-size:7px!important;border-radius:5px!important}
-.btn-start{left:calc(50% + 4px);bottom:6px;width:43px}
-.btn-select{left:calc(50% - 51px);bottom:6px;width:43px}
-.btn-fullscreen{right:6px;top:6px;width:25px;height:20px;font-size:9px!important}
-@media (max-height:220px){
-  .dpad{width:20px;height:20px;font-size:10px!important}
-  .up{left:34px;bottom:48px}.down{left:34px;bottom:6px}.left{left:12px;bottom:27px}.right{left:56px;bottom:27px}
-  .action{width:27px;height:27px;font-size:11px!important}.btn-a{right:10px;bottom:35px}.btn-b{right:42px;bottom:7px}
-  .system{height:17px;font-size:6px!important}.btn-start{width:38px}.btn-select{width:38px;left:calc(50% - 46px)}
-}
+#mobile-controls button{pointer-events:auto;position:absolute;margin:0;padding:0;border:1px solid rgba(255,255,255,.30);background:rgba(0,0,0,var(--control-alpha));color:rgba(255,255,255,.88);font:bold 7px monospace;line-height:1;border-radius:4px;touch-action:none;-webkit-tap-highlight-color:transparent;box-shadow:none}
+#mobile-controls button:active,#mobile-controls button.pressed{background:rgba(255,255,255,.20);border-color:rgba(255,255,255,.60)}
+.dpad{width:14px;height:14px;font-size:7px!important;border-radius:4px!important}
+.up{left:25px;bottom:35px}.down{left:25px;bottom:5px}.left{left:9px;bottom:20px}.right{left:41px;bottom:20px}
+.action{width:19px;height:19px;border-radius:50%!important;font-size:8px!important}
+.btn-a{right:8px;bottom:26px}.btn-b{right:31px;bottom:6px}
+.system{height:12px;font-size:4.5px!important;border-radius:3px!important}
+.btn-start{left:calc(50% + 3px);bottom:4px;width:29px}
+.btn-select{left:calc(50% - 35px);bottom:4px;width:29px}
+.btn-fullscreen{right:4px;top:4px;width:16px;height:13px;font-size:6px!important;border-radius:3px!important}
 @media (hover:hover) and (pointer:fine){#mobile-controls{display:none}}
 </style>
 </head>

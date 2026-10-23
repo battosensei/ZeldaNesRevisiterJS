@@ -31,7 +31,7 @@
 
     button=document.createElement('button');
     button.id='nes-exact-btn'; button.textContent='NES EXACT';
-    button.style.cssText='position:fixed;left:6px;top:6px;z-index:60;width:64px;height:20px;padding:0;background:rgba(0,0,0,.58);color:#fff;border:1px solid rgba(255,255,255,.55);font:bold 7px monospace;line-height:18px;border-radius:5px;-webkit-text-size-adjust:none;text-size-adjust:none;';
+    button.style.cssText='position:fixed;left:4px;top:4px;z-index:60;width:42px;height:14px;padding:0;background:rgba(0,0,0,.28);color:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.30);font:bold 4.5px monospace;line-height:12px;border-radius:3px;-webkit-text-size-adjust:none;text-size-adjust:none;';
     button.addEventListener('click',()=> running?stop():start());
     document.body.appendChild(button);
     refreshButton();

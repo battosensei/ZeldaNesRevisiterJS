@@ -14,10 +14,59 @@
   const state = base.state;
   const originalLoadRom = base.loadOriginalRom ? base.loadOriginalRom.bind(base) : null;
 
+  function playSfx(file,volume){
+    try{
+      const a=new Audio('./sounds/'+file);
+      a.volume=volume==null?.72:volume;
+      a.play().catch(()=>{});
+    }catch(_){}
+  }
+  function addEffect(kind,x,y){
+    if(!state.effects)state.effects=[];
+    state.effects.push({kind,x,y,life:kind==='death'?18:10,max:kind==='death'?18:10});
+  }
+  function hurtLink(amount){
+    if(state.invincible>0)return;
+    state.hp=Math.max(0,state.hp-amount);
+    state.invincible=40;
+    addEffect('hurt',state.x+8,state.y+8);
+    playSfx('LOZ_Link_Hurt.wav',.75);
+  }
+  function hurtEnemy(e,amount,sourceX,sourceY){
+    if(!e||e.dead||amount<=0)return false;
+    const def=ENEMY_DEF[e.type]||ENEMY_DEF.STALFOS;
+    e.hp-=amount;e.hit=10;
+    const dx=e.x-sourceX,dy=e.y-sourceY,d=Math.max(1,Math.hypot(dx,dy));
+    const kb=def.boss?2.2:5.5;
+    e.x+=dx/d*kb;e.y+=dy/d*kb;
+    addEffect('hit',e.x+8,e.y+8);
+    playSfx(def.boss?'LOZ_Boss_Hit.wav':'LOZ_Enemy_Hit.wav',def.boss?.78:.68);
+    if(e.hp<=0){
+      e.dead=true;
+      addEffect('death',e.x+8,e.y+8);
+      playSfx(def.boss?'LOZ_Boss_Scream1.wav':'LOZ_Enemy_Die.wav',def.boss?.86:.76);
+      if(!e.splitDone&&(e.type==='VIRE'||e.type==='ZOL')){
+        e.splitDone=true;
+        const child=e.type==='VIRE'?'KEESE':'GEL';
+        const es=state.roomEnemies||[];
+        for(let j=0;j<2;j++){
+          const c=spawnEnemy(child,j,2);c.x=e.x+(j?8:-8);c.y=e.y;es.push(c);
+        }
+      }
+    }
+    return true;
+  }
+  function updateEffects(){
+    if(!state.effects)return;
+    for(const fx of state.effects)fx.life--;
+    state.effects=state.effects.filter(fx=>fx.life>0);
+  }
+
   const meta = global.ZeldaQuestDungeonMeta || (global.ZeldaQuestDungeonMeta = {
     keys: 0,
     bombs: 0,
     maxBombs: 8,
+    maxHp: 3,
     items: new Set(),
     triforce: new Set(),
     roomMemory: Object.create(null)
@@ -246,7 +295,7 @@
     state.returnMap=returnMap==null?ENTRANCE_SCREENS[level]:returnMap;
     state.x=120; state.y=165; state.vx=0; state.vy=0; state.dir='up'; state.transitionLock=24;
     state.visited=new Set([state.room]); state.message=`LEVEL-${level}  ${LEVELS[level].name}`; state.messageTimer=110;
-    state.attackTimer=0; state.attackCooldown=0; state.invincible=0; state.hp=3; state.roomEnemies=[]; state.projectiles=[];
+    state.attackTimer=0; state.attackCooldown=0; state.invincible=0; state.maxHp=meta.maxHp||3; state.hp=state.maxHp; state.roomEnemies=[]; state.projectiles=[]; state.effects=[];
     ensureRoomRuntime();
     try{
       if(typeof backgroundMusic!=='undefined') backgroundMusic.pause();
@@ -267,7 +316,7 @@
     if(isShutter(state.room,n) && !memory().cleared){state.message='DEFEAT ENEMIES';state.messageTimer=60;return null;}
     if(isLocked(state.room,n)){
       if(meta.keys<=0){state.message='NEED A KEY';state.messageTimer=60;return null;}
-      meta.keys--; meta.roomMemory['unlock:'+state.level+':'+edge(state.room,n)]=true; state.message='KEY USED';state.messageTimer=45;
+      meta.keys--; meta.roomMemory['unlock:'+state.level+':'+edge(state.room,n)]=true; state.message='KEY USED';state.messageTimer=45;playSfx('LOZ_Door_Unlock.wav',.72);
     }
     return n;
   }
@@ -319,20 +368,10 @@
       e.x=Math.max(minX,Math.min(maxX,e.x));e.y=Math.max(minY,Math.min(maxY,e.y));
       const swordAllowed=!(e.type==='DODONGO'&&e.stunned<=0)&&!(e.type==='DIGDOGGER'&&!e.shrunk)&&e.type!=='GOHMA';
       if(state.attackTimer>0 && swordAllowed && e.hit===0 && hitbox(swordBox(),{x:e.x,y:e.y,w:e.type==='AQUAMENTUS'?24:16,h:e.type==='AQUAMENTUS'?28:16})){
-        e.hp--;e.hit=8;
-        if(e.hp<=0){
-          e.dead=true;
-          if(!e.splitDone && (e.type==='VIRE'||e.type==='ZOL')){
-            e.splitDone=true;
-            const child=e.type==='VIRE'?'KEESE':'GEL';
-            for(let j=0;j<2;j++){
-              const c=spawnEnemy(child,j,2); c.x=e.x+(j?8:-8); c.y=e.y; es.push(c);
-            }
-          }
-        }
+        hurtEnemy(e,1,state.x+8,state.y+8);
       }
       if(state.invincible<=0 && hitbox({x:state.x,y:state.y,w:14,h:14},{x:e.x,y:e.y,w:16,h:16})){
-        state.hp-=def.damage;state.invincible=45;
+        hurtLink(def.damage);
       }
     }
     const alive=es.filter(e=>!e.dead);
@@ -347,23 +386,29 @@
     for(const p of state.projectiles||[]){
       p.x+=p.vx;p.y+=p.vy;p.life--;
       if(p.kind==='enemy'&&state.invincible<=0&&hitbox({x:state.x,y:state.y,w:14,h:14},{x:p.x,y:p.y,w:6,h:6})){
-        state.hp-=.5;state.invincible=35;p.life=0;
+        hurtLink(.5);p.life=0;
       }
-      if(p.kind==='player'||p.kind==='bomb'||p.kind==='arrow'){
+      if(p.kind==='player'||p.kind==='bomb'||p.kind==='arrow'||p.kind==='swordBeam'){
         for(const e of state.roomEnemies||[]){
           if(e.dead)continue;
           const ew=e.type==='DODONGO'?32:16;
-          if(!hitbox({x:p.x,y:p.y,w:7,h:7},{x:e.x,y:e.y,w:ew,h:16}))continue;
+          if(!hitbox({x:p.x,y:p.y,w:p.kind==='swordBeam'?10:7,h:p.kind==='swordBeam'?10:7},{x:e.x,y:e.y,w:ew,h:16}))continue;
           if(p.kind==='bomb'&&e.type==='DODONGO'){
-            e.hp--;e.stunned=150;e.hit=12;p.life=0;if(e.hp<=0)e.dead=true;break;
+            e.stunned=150;hurtEnemy(e,1,p.x,p.y);p.life=0;break;
           }
           if(p.kind==='arrow'&&e.type==='GOHMA'){
-            e.hp--;e.hit=12;p.life=0;if(e.hp<=0)e.dead=true;break;
+            hurtEnemy(e,1,p.x,p.y);p.life=0;break;
+          }
+          if(p.kind==='swordBeam'){
+            const swordAllowed=!(e.type==='DODONGO'&&e.stunned<=0)&&!(e.type==='DIGDOGGER'&&!e.shrunk)&&e.type!=='GOHMA';
+            if(swordAllowed)hurtEnemy(e,1,p.x,p.y);
+            else playSfx('LOZ_Shield.wav',.55);
+            p.life=0;break;
           }
           if(p.kind==='player'){
-            if(e.type==='KEESE'||e.type==='GEL')e.hp=0;
-            else e.stunned=Math.max(e.stunned||0,45);
-            e.hit=12;if(e.hp<=0)e.dead=true;p.life=0;break;
+            if(e.type==='KEESE'||e.type==='GEL')hurtEnemy(e,e.hp,p.x,p.y);
+            else{e.stunned=Math.max(e.stunned||0,45);addEffect('hit',e.x+8,e.y+8);playSfx('LOZ_Enemy_Hit.wav',.55);}
+            p.life=0;break;
           }
         }
       }
@@ -375,12 +420,12 @@
     if(!state.reward)return; const r=state.reward;
     if(Math.abs((state.x+8)-r.x)<16&&Math.abs((state.y+8)-r.y)<16){
       const m=memory();m.rewardTaken=true;
-      if(r.type==='KEY'){meta.keys++;state.message='KEY +1';}
-      else if(r.type==='BOMBS'){meta.bombs=Math.min(meta.maxBombs||8,meta.bombs+4);state.message='BOMBS +4';}
-      else if(r.type==='HEART'){state.hp=Math.min(6,state.hp+1);state.message='HEART CONTAINER';}
-      else if(r.type==='TRIFORCE'){meta.triforce.add(state.level);state.message='TRIFORCE';}
+      if(r.type==='KEY'){meta.keys++;state.message='KEY +1';playSfx('LOZ_Key_Appear.wav',.72);}
+      else if(r.type==='BOMBS'){meta.bombs=Math.min(meta.maxBombs||8,meta.bombs+4);state.message='BOMBS +4';playSfx('LOZ_Get_Item.wav',.72);}
+      else if(r.type==='HEART'){meta.maxHp=Math.min(6,(meta.maxHp||3)+1);state.maxHp=meta.maxHp;state.hp=state.maxHp;state.message='HEART CONTAINER';playSfx('LOZ_Get_Heart.wav',.82);}
+      else if(r.type==='TRIFORCE'){meta.triforce.add(state.level);state.message='TRIFORCE';playSfx('LOZ_Fanfare.wav',.84);}
       else if(r.type==='ZELDA'){state.message='ZELDA RESCUED';}
-      else{meta.items.add(r.type);state.message=r.type;}
+      else{meta.items.add(r.type);state.message=r.type;playSfx('LOZ_Get_Item.wav',.76);}
       state.messageTimer=90;state.reward=null;
     }
   }
@@ -389,7 +434,7 @@
     if(!state.active)return;
     if(state.transitionLock>0)state.transitionLock--;if(state.messageTimer>0)state.messageTimer--;if(state.attackCooldown>0)state.attackCooldown--;if(state.attackTimer>0)state.attackTimer--;if(state.invincible>0)state.invincible--;
     const speed=1.45;state.x+=state.vx*speed;state.y+=state.vy*speed;
-    updateEnemies();updateProjectiles();collectReward();
+    updateEnemies();updateProjectiles();updateEffects();collectReward();
     if(state.y<65&&state.x>103&&state.x<153){const n=tryDoor('N');if(n)changeRoom(n,'N');else state.y=65;}
     if(state.y>190&&state.x>103&&state.x<153){const n=tryDoor('S');if(n)changeRoom(n,'S');else if(state.room===LEVELS[state.level].entrance)exit();else state.y=190;}
     if(state.x<23&&state.y>108&&state.y<150){const n=tryDoor('W');if(n)changeRoom(n,'W');else state.x=23;}
@@ -403,7 +448,17 @@
     if(e.keyCode===39){state.vx=1;state.dir='right';return true;}
     if(e.keyCode===38){state.vy=-1;state.dir='up';return true;}
     if(e.keyCode===40){state.vy=1;state.dir='down';return true;}
-    if(e.keyCode===32){if(state.attackCooldown<=0){state.attackTimer=8;state.attackCooldown=12;}return true;}
+    if(e.keyCode===32){
+      if(state.attackCooldown<=0){
+        state.attackTimer=8;state.attackCooldown=12;playSfx('LOZ_Sword_Slash.wav',.7);
+        if(state.hp>=state.maxHp && !(state.projectiles||[]).some(p=>p.kind==='swordBeam')){
+          const d=state.dir==='left'?[-1,0]:state.dir==='right'?[1,0]:state.dir==='up'?[0,-1]:[0,1];
+          state.projectiles.push({kind:'swordBeam',x:state.x+8+d[0]*12,y:state.y+8+d[1]*12,vx:d[0]*3.15,vy:d[1]*3.15,life:72});
+          playSfx('LOZ_Sword_Shoot.wav',.72);
+        }
+      }
+      return true;
+    }
     if(e.keyCode===66){
       const alive=(state.roomEnemies||[]).filter(x=>!x.dead);
       const dodongo=alive.find(x=>x.type==='DODONGO');
@@ -411,13 +466,13 @@
       const gohma=alive.find(x=>x.type==='GOHMA');
       const d=state.dir==='left'?[-1,0]:state.dir==='right'?[1,0]:state.dir==='up'?[0,-1]:[0,1];
       if(dodongo&&meta.bombs>0){
-        meta.bombs--;state.projectiles.push({kind:'bomb',x:state.x+8,y:state.y+8,vx:d[0]*1.45,vy:d[1]*1.45,life:75});
+        meta.bombs--;playSfx('LOZ_Bomb_Drop.wav',.68);state.projectiles.push({kind:'bomb',x:state.x+8,y:state.y+8,vx:d[0]*1.45,vy:d[1]*1.45,life:75});
       }else if(digdogger&&meta.items.has('RECORDER')){
-        digdogger.shrunk=true;digdogger.hp=Math.min(digdogger.hp,4);state.message='DIGDOGGER SHRINKS';state.messageTimer=60;
+        playSfx('LOZ_Recorder.wav',.78);digdogger.shrunk=true;digdogger.hp=Math.min(digdogger.hp,4);state.message='DIGDOGGER SHRINKS';state.messageTimer=60;
       }else if(gohma&&meta.items.has('BOW')){
-        state.projectiles.push({kind:'arrow',x:state.x+8,y:state.y+8,vx:d[0]*3.2,vy:d[1]*3.2,life:65});
+        playSfx('LOZ_Arrow_Boomerang.wav',.62);state.projectiles.push({kind:'arrow',x:state.x+8,y:state.y+8,vx:d[0]*3.2,vy:d[1]*3.2,life:65});
       }else if(meta.items.has('BOOMERANG')||meta.items.has('MAGICAL BOOMERANG')){
-        state.projectiles.push({kind:'player',x:state.x+8,y:state.y+8,vx:d[0]*2.4,vy:d[1]*2.4,life:45});
+        playSfx('LOZ_Arrow_Boomerang.wav',.58);state.projectiles.push({kind:'player',x:state.x+8,y:state.y+8,vx:d[0]*2.4,vy:d[1]*2.4,life:45});
       }
       return true;
     }
@@ -496,6 +551,22 @@
       ctx.fillStyle='#fff';ctx.fillRect(e.x,e.y,12,12);
     }
   }
+  function drawEffects(ctx){
+    for(const fx of state.effects||[]){
+      const t=fx.life/fx.max;
+      if(fx.kind==='hit'){
+        ctx.fillStyle=fx.life%2?'#fff':'#f8b800';
+        ctx.fillRect(fx.x-5,fx.y-1,10,2);ctx.fillRect(fx.x-1,fx.y-5,2,10);
+      }else if(fx.kind==='death'){
+        ctx.fillStyle=fx.life%2?'#fff':'#f85020';
+        const r=(1-t)*10+2;
+        ctx.fillRect(fx.x-r,fx.y-1,4,2);ctx.fillRect(fx.x+r-4,fx.y-1,4,2);
+        ctx.fillRect(fx.x-1,fx.y-r,2,4);ctx.fillRect(fx.x-1,fx.y+r-4,2,4);
+      }else{
+        ctx.fillStyle='#f85020';ctx.fillRect(fx.x-4,fx.y-4,8,8);
+      }
+    }
+  }
   function drawReward(ctx,r){
     if(!r)return;
     ctx.textAlign='center';ctx.font='8px monospace';ctx.fillStyle='#f8b800';
@@ -532,7 +603,7 @@
     ctx.fillStyle=pal[2];ctx.font='8px monospace';ctx.fillText(`LEVEL-${state.level}`,16,15);
     ctx.fillStyle='#fff';ctx.fillText(LEVELS[state.level].name,16,29);
     ctx.fillText(`KEY x${meta.keys}`,168,15);ctx.fillText(`BOMB x${meta.bombs}`,168,28);ctx.fillText(`ROOM ${state.room}`,168,41);
-    for(let i=0;i<3;i++){ctx.fillStyle=i<Math.ceil(state.hp)?'#d82800':'#552000';ctx.fillRect(176+i*10,40,7,7);}
+    for(let i=0;i<state.maxHp;i++){const row=Math.floor(i/6),col=i%6;ctx.fillStyle=i<Math.ceil(state.hp)?'#d82800':'#552000';ctx.fillRect(168+col*10,44+row*9,7,7);}
     drawMiniMap(ctx);
   }
   function drawRoom(ctx){
@@ -548,9 +619,16 @@
     if(nE)drawDoor(ctx,'E',nE,pal);
     for(const e of state.roomEnemies||[])drawEnemy(ctx,e);
     for(const p of state.projectiles||[]){
-      ctx.fillStyle=p.kind==='enemy'?'#f85020':'#80d8ff';ctx.fillRect(p.x,p.y,5,5);
+      if(p.kind==='swordBeam'){
+        ctx.fillStyle='#f8f8f8';
+        if(Math.abs(p.vx)>0)ctx.fillRect(p.x-2,p.y+2,12,4);else ctx.fillRect(p.x+2,p.y-2,4,12);
+        ctx.fillStyle='#80d8ff';
+        if(Math.abs(p.vx)>0)ctx.fillRect(p.x,p.y+3,8,2);else ctx.fillRect(p.x+3,p.y,2,8);
+      }else{
+        ctx.fillStyle=p.kind==='enemy'?'#f85020':p.kind==='bomb'?'#888':'#80d8ff';ctx.fillRect(p.x,p.y,5,5);
+      }
     }
-    drawReward(ctx,state.reward);drawLinkDungeon(ctx);
+    drawEffects(ctx);drawReward(ctx,state.reward);drawLinkDungeon(ctx);
     if(spec.npc){
       ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='8px monospace';ctx.fillText('SECRET IS IN THE TREE',128,152);ctx.textAlign='left';
     }

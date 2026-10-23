@@ -128,7 +128,7 @@
     },
     5:{
       C1:{layout:'entrance'}, D1:{enemies:[['POLSVOICE',3]],reward:'KEY',layout:'empty'}, C2:{enemies:[['GIBDO',3]],reward:'KEY',layout:'empty'},
-      B2:{enemies:[['GIBDO',3]],reward:'BOMBS',layout:'blocks4'}, A2:{enemies:[['DARKNUT',3]],layout:'columns'}, A3:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'},
+      B2:{enemies:[['GIBDO',3]],reward:'BOMBS',layout:'blocks4'}, A2:{enemies:[['DARKNUT',3]],layout:'columns'}, A5:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'},
       B3:{npc:'OLD MAN',layout:'oldman'}, C3:{enemies:[['DARKNUT',3]],layout:'columns'}, D3:{enemies:[['GIBDO',3]],layout:'empty'}, C4:{enemies:[['GIBDO',3]],layout:'blocks4'},
       D4:{enemies:[['DODONGO',2]],layout:'boss'}, D5:{reward:'MAP',layout:'empty'}, D6:{enemies:[['VIRE',3]],layout:'empty'}, C6:{enemies:[['GIBDO',3]],reward:'KEY',layout:'empty'},
       B6:{enemies:[['DARKNUT',3]],reward:'COMPASS',layout:'columns'}, B7:{enemies:[['POLSVOICE',3],['GIBDO',2]],reward:'KEY',layout:'cross'},

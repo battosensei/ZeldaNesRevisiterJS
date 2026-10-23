@@ -2,13 +2,11 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ 'android-apk-build' ]
+    branches:
+      - android-apk-build
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: android
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -18,62 +16,21 @@ jobs:
       - uses: android-actions/setup-android@v3
       - name: Install SDK
         run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Copy web game into Android assets
-        working-directory: .
+      - name: Prepare web assets
         run: |
           rm -rf android/app/src/main/assets/www
           mkdir -p android/app/src/main/assets/www
           rsync -a --exclude '.git' --exclude '.github' --exclude 'android' ./ android/app/src/main/assets/www/
           cp android/web/index.html android/app/src/main/assets/www/index.html
           cp android/web/dungeonNES.js android/app/src/main/assets/www/dungeonNES.js
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('android/app/src/main/assets/www/main.js')
-          s=p.read_text()
-          replacements={
-            './sounds/overworld_edit.mp3':'./sounds/Overworld_edit.mp3',
-            './sounds/LOZ_sword_slash.wav':'./sounds/LOZ_Sword_Slash.wav',
-            './sounds/LOZ_text_slow.wav':'./sounds/LOZ_Text_Slow.wav',
-            './sounds/item.mp3':'./sounds/Item.mp3',
-            './sounds/LOZ_shield.wav':'./sounds/LOZ_Shield.wav',
-            './sounds/LOZ_link_hurt.wav':'./sounds/LOZ_Link_Hurt.wav',
-            './sounds/LOZ_get_rupee.wav':'./sounds/LOZ_Get_Rupee.wav',
-            './sounds/LOZ_enemy_die.wav':'./sounds/LOZ_Enemy_Die.wav',
-            './sounds/LOZ_enemy_hit.wav':'./sounds/LOZ_Enemy_Hit.wav',
-          }
-          for a,b in replacements.items(): s=s.replace(a,b)
-          kd='function keyDownHandler(e){'
-          if 'DungeonNES.handleKeyDown' not in s:
-              s=s.replace(kd, kd+"\n\tif(window.DungeonNES && DungeonNES.handleKeyDown(e)){ e.preventDefault(); return; }",1)
-          ku='function keyUpHandler(e){'
-          if 'DungeonNES.handleKeyUp' not in s:
-              s=s.replace(ku, ku+"\n\tif(window.DungeonNES && DungeonNES.handleKeyUp(e)){ e.preventDefault(); return; }",1)
-          needle='''\t\telse
-\t\t{
-\t\t\tinvincibleTime--;'''
-          insert='''\t\telse
-\t\t{
-\t\t\tif(window.DungeonNES && DungeonNES.state.active)
-\t\t\t{
-\t\t\t\tDungeonNES.updateAndDraw(ctx);
-\t\t\t\treturn;
-\t\t\t}
-\t\t\tif(window.DungeonNES && DungeonNES.maybeEnterFromOverworld(currentMap, linkX, linkY))
-\t\t\t{
-\t\t\t\tDungeonNES.updateAndDraw(ctx);
-\t\t\t\treturn;
-\t\t\t}
-\t\t\tinvincibleTime--;'''
-          if 'DungeonNES.maybeEnterFromOverworld' not in s:
-              if needle not in s: raise SystemExit('main.js game-loop patch point not found')
-              s=s.replace(needle,insert,1)
-          p.write_text(s)
-          PY
+          python3 android/patch_main.py
+          node --check android/app/src/main/assets/www/main.js
+          node --check android/app/src/main/assets/www/dungeonNES.js
       - name: Build debug APK
+        working-directory: android
         run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:

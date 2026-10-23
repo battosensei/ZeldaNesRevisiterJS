@@ -40,11 +40,11 @@
     const kb=def.boss?2.2:5.5;
     e.x+=dx/d*kb;e.y+=dy/d*kb;
     addEffect('hit',e.x+8,e.y+8);
-    playSfx(def.boss?'LOZ_Boss_Hit.wav':'LOZ_Enemy_Hit.wav',def.boss?.78:.68);
+    playSfx(def.boss?'LOZ_Boss_Hit.wav':'LOZ_Enemy_Hit.wav',def.boss ? .78 : .68);
     if(e.hp<=0){
       e.dead=true;
       addEffect('death',e.x+8,e.y+8);
-      playSfx(def.boss?'LOZ_Boss_Scream1.wav':'LOZ_Enemy_Die.wav',def.boss?.86:.76);
+      playSfx(def.boss?'LOZ_Boss_Scream1.wav':'LOZ_Enemy_Die.wav',def.boss ? .86 : .76);
       if(!e.splitDone&&(e.type==='VIRE'||e.type==='ZOL')){
         e.splitDone=true;
         const child=e.type==='VIRE'?'KEESE':'GEL';

@@ -50,7 +50,8 @@
     LIKELIKE:{x:176,y:176,w:16,h:16},
     MOLDORM:{x:384,y:272,w:16,h:16},
     DODONGO:{x:64,y:304,w:32,h:16},
-    LANMOLA:{x:384,y:272,w:16,h:16}
+    LANMOLA:{x:384,y:272,w:16,h:16},
+    PATRA:{x:352,y:272,w:16,h:16}
   };
 
   const ENEMY_DEF = {
@@ -75,7 +76,8 @@
     GLEEOK:{hp:10,speed:.1,damage:1,ai:'boss',boss:true},
     DIGDOGGER:{hp:8,speed:.8,damage:1,ai:'boss',boss:true},
     GOHMA:{hp:6,speed:.35,damage:1,ai:'boss',boss:true},
-    GANON:{hp:12,speed:.8,damage:1,ai:'boss',boss:true}
+    GANON:{hp:12,speed:.8,damage:1,ai:'boss',boss:true},
+    PATRA:{hp:8,speed:.45,damage:1,ai:'boss',boss:true}
   };
 
   const LEVEL_POOLS = {
@@ -87,29 +89,87 @@
     6:['WIZZROBE','ZOL','KEESE','LIKELIKE','ROPE'],
     7:['MOLDORM','KEESE','GORIYA','STALFOS','DODONGO'],
     8:['DARKNUT','GIBDO','POLSVOICE','KEESE','LIKELIKE'],
-    9:['LIKELIKE','ZOL','LANMOLA','KEESE','WIZZROBE','DARKNUT']
+    9:['LIKELIKE','ZOL','LANMOLA','KEESE','WIZZROBE','DARKNUT','PATRA']
   };
   const BOSSES={1:'AQUAMENTUS',2:'DODONGO',3:'MANHANDLA',4:'GLEEOK',5:'DIGDOGGER',6:'GOHMA',7:'AQUAMENTUS',8:'GLEEOK',9:'GANON'};
 
   const ROOM_CONTENTS = {
     1:{
-      C1:{layout:'entrance'},
-      B1:{enemies:[['KEESE',3]],reward:'KEY',layout:'empty'},
-      D1:{enemies:[['STALFOS',5]],reward:'KEY',layout:'blocks4'},
-      C2:{enemies:[['STALFOS',3]],layout:'cross'},
-      C3:{enemies:[['STALFOS',4]],reward:'KEY',layout:'blocks4'},
-      D3:{enemies:[['KEESE',4]],reward:'COMPASS',layout:'empty'},
-      B3:{enemies:[['KEESE',4]],layout:'blocks4'},
-      B4:{enemies:[['GEL',3]],layout:'push'},
-      A4:{npc:'OLD MAN',layout:'oldman'},
-      C4:{enemies:[['GEL',3]],reward:'MAP',layout:'cross'},
-      C5:{enemies:[['STALFOS',4]],reward:'KEY',layout:'blocks4'},
-      C6:{enemies:[['GORIYA',3]],reward:'KEY',layout:'columns'},
-      B6:{enemies:[['KEESE',4]],reward:'BOW',layout:'stairs'},
-      D4:{enemies:[['GORIYA',3]],reward:'BOOMERANG',layout:'columns'},
-      E4:{enemies:[['WALLMASTER',4]],reward:'KEY',layout:'wallmaster'},
-      E5:{enemies:[['AQUAMENTUS',1]],reward:'HEART',layout:'boss'},
-      F5:{reward:'TRIFORCE',layout:'triforce'}
+      C1:{layout:'entrance'}, B1:{enemies:[['KEESE',3]],reward:'KEY',layout:'empty'}, D1:{enemies:[['STALFOS',5]],reward:'KEY',layout:'blocks4'},
+      C2:{enemies:[['STALFOS',3]],layout:'cross'}, C3:{enemies:[['STALFOS',4]],reward:'KEY',layout:'blocks4'}, D3:{enemies:[['KEESE',4]],reward:'COMPASS',layout:'empty'},
+      B3:{enemies:[['KEESE',4]],layout:'blocks4'}, B4:{enemies:[['GEL',3]],layout:'push'}, A4:{npc:'OLD MAN',layout:'oldman'},
+      C4:{enemies:[['GEL',3]],reward:'MAP',layout:'cross'}, C5:{enemies:[['STALFOS',4]],reward:'KEY',layout:'blocks4'}, C6:{enemies:[['GORIYA',3]],reward:'KEY',layout:'columns'},
+      B6:{enemies:[['KEESE',4]],reward:'BOW',layout:'stairs'}, D4:{enemies:[['GORIYA',3]],reward:'BOOMERANG',layout:'columns'}, E4:{enemies:[['WALLMASTER',4]],reward:'KEY',layout:'wallmaster'},
+      E5:{enemies:[['AQUAMENTUS',1]],reward:'HEART',layout:'boss'}, F5:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    2:{
+      B1:{layout:'entrance'}, B2:{enemies:[['ROPE',5]],layout:'empty'}, A2:{enemies:[['ROPE',6]],reward:'KEY',layout:'empty'}, C1:{enemies:[['ROPE',5]],reward:'KEY',layout:'empty'},
+      C2:{enemies:[['ROPE',3]],layout:'cross'}, D2:{enemies:[['GEL',3]],reward:'COMPASS',layout:'empty'}, D3:{enemies:[['GEL',3]],reward:'MAP',layout:'blocks4'},
+      C3:{enemies:[['GORIYA',3]],reward:'KEY',layout:'columns'}, C4:{enemies:[['GORIYA',3]],layout:'columns'}, D4:{enemies:[['GORIYA',3]],reward:'MAGICAL BOOMERANG',layout:'columns'},
+      C5:{enemies:[['ROPE',5]],layout:'empty'}, D5:{enemies:[['GORIYA',3]],reward:'BOMBS',layout:'columns'}, C6:{enemies:[['MOLDORM',2]],reward:'KEY',layout:'cross'},
+      D6:{enemies:[['GEL',4]],layout:'empty'}, C7:{enemies:[['ROPE',5]],layout:'empty'}, D7:{npc:'OLD MAN',layout:'oldman'},
+      D8:{enemies:[['DODONGO',1]],reward:'HEART',layout:'boss'}, C8:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    3:{
+      D1:{layout:'entrance'}, C1:{enemies:[['ZOL',3]],reward:'KEY',layout:'empty'}, C2:{enemies:[['ZOL',3]],reward:'KEY',layout:'blocks4'},
+      C3:{enemies:[['DARKNUT',3]],reward:'BOMBS',layout:'columns'}, B3:{enemies:[['KEESE',4]],reward:'COMPASS',layout:'empty'}, A3:{enemies:[['DARKNUT',5]],layout:'columns'},
+      A2:{enemies:[['DARKNUT',8]],reward:'RAFT',layout:'stairs'}, A4:{enemies:[['DARKNUT',4]],reward:'KEY',layout:'blocks4'}, B4:{enemies:[['KEESE',4]],reward:'BOMBS',layout:'empty'},
+      C4:{enemies:[['ZOL',3]],reward:'KEY',layout:'cross'}, D4:{enemies:[['ZOL',3]],reward:'MAP',layout:'empty'}, C5:{npc:'OLD MAN',layout:'oldman'},
+      C6:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'}, D6:{enemies:[['KEESE',4]],layout:'blocks4'}, E3:{enemies:[['ZOL',3]],layout:'empty'},
+      E4:{enemies:[['MANHANDLA',1]],reward:'HEART',layout:'boss'}, E5:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    4:{
+      B1:{layout:'entrance'}, A1:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'}, B2:{enemies:[['VIRE',3]],layout:'empty'}, C2:{enemies:[['VIRE',3]],reward:'COMPASS',layout:'empty'},
+      B3:{enemies:[['KEESE',4]],reward:'KEY',layout:'blocks4'}, A3:{enemies:[['VIRE',3]],layout:'empty'}, A4:{enemies:[['ZOL',3]],reward:'KEY',layout:'cross'},
+      A5:{enemies:[['VIRE',3]],layout:'empty'}, B5:{enemies:[['VIRE',3]],layout:'blocks4'}, C5:{enemies:[['VIRE',4]],reward:'STEPLADDER',layout:'stairs'},
+      A6:{enemies:[['VIRE',3]],layout:'empty'}, B6:{enemies:[['VIRE',3]],reward:'MAP',layout:'empty'}, A7:{enemies:[['MANHANDLA',1]],layout:'boss'},
+      B7:{npc:'OLD MAN',layout:'oldman'}, C7:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'}, D7:{enemies:[['GLEEOK',1]],reward:'HEART',layout:'boss'},
+      D8:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    5:{
+      C1:{layout:'entrance'}, D1:{enemies:[['POLSVOICE',3]],reward:'KEY',layout:'empty'}, C2:{enemies:[['GIBDO',3]],reward:'KEY',layout:'empty'},
+      B2:{enemies:[['GIBDO',3]],reward:'BOMBS',layout:'blocks4'}, A2:{enemies:[['DARKNUT',3]],layout:'columns'}, A3:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'},
+      B3:{npc:'OLD MAN',layout:'oldman'}, C3:{enemies:[['DARKNUT',3]],layout:'columns'}, D3:{enemies:[['GIBDO',3]],layout:'empty'}, C4:{enemies:[['GIBDO',3]],layout:'blocks4'},
+      D4:{enemies:[['DODONGO',2]],layout:'boss'}, D5:{reward:'MAP',layout:'empty'}, D6:{enemies:[['VIRE',3]],layout:'empty'}, C6:{enemies:[['GIBDO',3]],reward:'KEY',layout:'empty'},
+      B6:{enemies:[['DARKNUT',3]],reward:'COMPASS',layout:'columns'}, B7:{enemies:[['POLSVOICE',3],['GIBDO',2]],reward:'KEY',layout:'cross'},
+      B8:{enemies:[['KEESE',4]],reward:'RECORDER',layout:'stairs'}, C8:{enemies:[['DARKNUT',3]],layout:'columns'},
+      A6:{enemies:[['DIGDOGGER',1]],reward:'HEART',layout:'boss'}, A7:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    6:{
+      B1:{layout:'entrance'}, C1:{enemies:[['WIZZROBE',3]],reward:'KEY',layout:'empty'}, C2:{npc:'OLD MAN',layout:'oldman'}, A1:{enemies:[['WIZZROBE',3]],layout:'empty'},
+      A2:{enemies:[['ZOL',3]],reward:'COMPASS',layout:'cross'}, A3:{enemies:[['KEESE',4]],reward:'KEY',layout:'empty'}, A4:{layout:'cross'},
+      A5:{enemies:[['LIKELIKE',3]],layout:'push'}, A6:{enemies:[['GLEEOK',1]],layout:'boss'}, B6:{enemies:[['LIKELIKE',2],['ROPE',2]],reward:'MAP',layout:'blocks4'},
+      B7:{enemies:[['WIZZROBE',3]],layout:'empty'}, B8:{enemies:[['KEESE',4]],reward:'MAGICAL ROD',layout:'stairs'}, C7:{enemies:[['ROPE',3],['LIKELIKE',2]],layout:'cross'},
+      C8:{enemies:[['WIZZROBE',3]],reward:'KEY',layout:'empty'}, D6:{enemies:[['WIZZROBE',3]],reward:'KEY',layout:'empty'}, D7:{enemies:[['VIRE',3]],layout:'empty'},
+      D8:{enemies:[['ROPE',3],['LIKELIKE',2]],layout:'cross'}, E6:{enemies:[['WIZZROBE',3]],layout:'empty'}, E7:{enemies:[['GOHMA',1]],reward:'HEART',layout:'boss'},
+      E8:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    7:{
+      B1:{layout:'entrance'}, C1:{enemies:[['MOLDORM',2]],reward:'BOMBS',layout:'empty'}, C2:{enemies:[['KEESE',4]],layout:'empty'},
+      C3:{enemies:[['GORIYA',3]],layout:'columns'}, D3:{enemies:[['DIGDOGGER',1]],layout:'boss'}, E3:{enemies:[['STALFOS',4]],reward:'KEY',layout:'blocks4'},
+      B3:{npc:'OLD MAN',layout:'oldman'}, A3:{enemies:[['STALFOS',4]],reward:'COMPASS',layout:'blocks4'}, A4:{enemies:[['GORIYA',3]],layout:'columns'},
+      B4:{enemies:[['DODONGO',3]],layout:'boss'}, C4:{npc:'OLD MAN',layout:'oldman'}, D4:{enemies:[['GORIYA',3],['KEESE',2]],layout:'cross'},
+      A5:{enemies:[['DIGDOGGER',1]],layout:'boss'}, B5:{enemies:[['MOLDORM',2]],reward:'KEY',layout:'empty'}, A6:{enemies:[['GORIYA',3]],layout:'columns'},
+      B6:{enemies:[['GORIYA',3]],reward:'MAP',layout:'empty'}, A7:{enemies:[['GORIYA',3]],reward:'KEY',layout:'columns'}, B7:{enemies:[['GORIYA',3]],layout:'columns'},
+      C7:{enemies:[['KEESE',4]],reward:'RED CANDLE',layout:'stairs'}, C6:{enemies:[['AQUAMENTUS',1]],reward:'HEART',layout:'boss'}, D6:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    8:{
+      D1:{layout:'entrance'}, E1:{enemies:[['DARKNUT',2],['GIBDO',2]],reward:'KEY',layout:'columns'}, C1:{enemies:[['MANHANDLA',1]],layout:'boss'},
+      B1:{enemies:[['DARKNUT',3],['GIBDO',2]],reward:'BOOK OF MAGIC',layout:'stairs'}, D2:{enemies:[['MANHANDLA',1]],layout:'boss'},
+      D3:{enemies:[['DARKNUT',3]],layout:'columns'}, E3:{enemies:[['POLSVOICE',3]],reward:'COMPASS',layout:'empty'}, C3:{enemies:[['POLSVOICE',2],['KEESE',2],['GIBDO',2]],reward:'KEY',layout:'cross'},
+      B4:{enemies:[['DARKNUT',3]],reward:'KEY',layout:'columns'}, C4:{enemies:[['GOHMA',1]],layout:'boss'}, D4:{npc:'OLD MAN',layout:'oldman'},
+      E4:{enemies:[['DARKNUT',2],['GIBDO',2]],layout:'cross'}, A5:{enemies:[['MANHANDLA',1]],reward:'MAP',layout:'boss'}, B5:{enemies:[['GLEEOK',1]],reward:'HEART',layout:'boss'},
+      C5:{enemies:[['POLSVOICE',3]],reward:'BOMBS',layout:'empty'}, D5:{enemies:[['DARKNUT',3],['POLSVOICE',2]],reward:'MAGICAL KEY',layout:'stairs'},
+      E5:{enemies:[['DARKNUT',3]],layout:'columns'}, B6:{reward:'TRIFORCE',layout:'triforce'}
+    },
+    9:{
+      G1:{layout:'entrance'}, G2:{layout:'oldman',npc:'TRIFORCE GATE'}, G3:{enemies:[['LIKELIKE',2],['ZOL',3]],reward:'KEY',layout:'cross'},
+      F3:{enemies:[['LANMOLA',2]],layout:'push'}, E3:{enemies:[['KEESE',4],['LIKELIKE',2]],layout:'empty'}, E4:{enemies:[['WIZZROBE',4]],layout:'blocks4'},
+      E5:{enemies:[['WIZZROBE',4]],reward:'COMPASS',layout:'blocks4'}, F5:{enemies:[['PATRA',1]],layout:'boss'}, F4:{enemies:[['ZOL',3]],layout:'empty'},
+      G4:{enemies:[['PATRA',1]],reward:'MAP',layout:'boss'}, G5:{enemies:[['WIZZROBE',4]],layout:'columns'}, G6:{enemies:[['WIZZROBE',4]],layout:'push'},
+      F6:{enemies:[['ZOL',3]],layout:'empty'}, E6:{enemies:[['KEESE',4]],layout:'empty'}, D6:{enemies:[['PATRA',1]],layout:'boss'},
+      D7:{enemies:[['WIZZROBE',4]],layout:'columns'}, D8:{enemies:[['WIZZROBE',4]],reward:'SILVER ARROWS',layout:'stairs'},
+      H8:{enemies:[['WIZZROBE',4]],reward:'RED RING',layout:'stairs'}, C4:{enemies:[['GANON',1]],reward:'HEART',layout:'boss'}, C5:{reward:'ZELDA',layout:'triforce'}
     }
   };
 

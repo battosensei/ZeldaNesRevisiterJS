@@ -34,23 +34,30 @@ jobs:
           set -euo pipefail
           DATA="aw2apk/app/src/main/assets/www/data"
           rm -rf "$DATA"
-          mkdir -p "$DATA"
-          curl -fL --retry 5 --retry-delay 2 \
-            "https://cdn.emulatorjs.org/stable/data/emulator.min.zip" \
-            -o /tmp/emulatorjs-data.zip
-          rm -rf /tmp/emulatorjs-data
-          mkdir -p /tmp/emulatorjs-data
-          unzip -q /tmp/emulatorjs-data.zip -d /tmp/emulatorjs-data
-          LOADER="$(find /tmp/emulatorjs-data -type f -name loader.js | head -n 1)"
-          test -n "$LOADER"
-          DATA_SRC="$(dirname "$LOADER")"
-          cp -a "$DATA_SRC"/. "$DATA"/
+          mkdir -p "$DATA/cores"
+          BASE="https://cdn.emulatorjs.org/stable/data"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/loader.js" -o "$DATA/loader.js"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.js" -o "$DATA/emulator.min.js"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.css" -o "$DATA/emulator.min.css"
+
+          rm -rf /tmp/mgba-core /tmp/npm-pack
+          mkdir -p /tmp/mgba-core /tmp/npm-pack
+          (
+            cd /tmp/npm-pack
+            npm pack @emulatorjs/core-mgba@4.2.3 >/tmp/mgba-tarball-name.txt
+          )
+          MGBA_TGZ="/tmp/npm-pack/$(tail -n 1 /tmp/mgba-tarball-name.txt)"
+          tar -xzf "$MGBA_TGZ" -C /tmp/mgba-core
+          find /tmp/mgba-core -type f -name 'mgba*' -print -exec cp {} "$DATA/cores/" \;
+
           test -f "$DATA/loader.js"
           test -f "$DATA/emulator.min.js"
           test -f "$DATA/emulator.min.css"
           test -f "$DATA/cores/mgba-wasm.data"
           test -f "$DATA/cores/mgba-legacy-wasm.data"
-          printf 'Offline runtime files: %s\n' "$(find "$DATA" -type f | wc -l)"
+          test "$(find "$DATA/cores" -maxdepth 1 -type f -name 'mgba*' | wc -l)" -ge 6
+          printf 'Bundled mGBA core files:\n'
+          find "$DATA/cores" -maxdepth 1 -type f -name 'mgba*' -printf '%f\n' | sort
           truncate -s 8388608 aw2apk/app/src/main/assets/www/game.gba
 
       - name: Build unsigned release APK

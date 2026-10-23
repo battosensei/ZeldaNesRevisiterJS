@@ -28,7 +28,9 @@ jobs:
           curl -fL "https://unpkg.com/jsnes@2.1.0/dist/jsnes.min.js" -o android/app/src/main/assets/www/jsnes.min.js
           python3 android/patch_main.py
           node --check android/app/src/main/assets/www/main.js
-          node --check android/app/src/main/assets/www/dungeonNES.js\n          node --check android/app/src/main/assets/www/exactNES.js\n          test -s android/app/src/main/assets/www/jsnes.min.js
+          node --check android/app/src/main/assets/www/dungeonNES.js
+          node --check android/app/src/main/assets/www/exactNES.js
+          test -s android/app/src/main/assets/www/jsnes.min.js
       - name: Build debug APK
         working-directory: android
         run: gradle :app:assembleDebug --stacktrace

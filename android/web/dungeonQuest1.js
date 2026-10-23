@@ -17,6 +17,7 @@
   const meta = global.ZeldaQuestDungeonMeta || (global.ZeldaQuestDungeonMeta = {
     keys: 0,
     bombs: 0,
+    maxBombs: 8,
     items: new Set(),
     triforce: new Set(),
     roomMemory: Object.create(null)
@@ -219,7 +220,10 @@
     const def=ENEMY_DEF[type]||ENEMY_DEF.STALFOS;
     const spots=[[64,96],[112,96],[160,96],[80,144],[128,144],[176,144],[96,120],[152,120]];
     const p=spots[i%spots.length];
-    return {type,x:p[0],y:p[1],vx:0,vy:0,hp:def.hp,maxHp:def.hp,dead:false,timer:20+i*17,phase:i,hit:0,shot:20+i*11};
+    let hp=def.hp;
+    if(type==='GOHMA') hp=state.level===6?1:3;
+    if(type==='GLEEOK') hp=state.level===4?6:12;
+    return {type,x:p[0],y:p[1],vx:0,vy:0,hp,maxHp:hp,dead:false,timer:20+i*17,phase:i,hit:0,shot:20+i*11,stunned:0,shrunk:false,splitDone:false};
   }
   function ensureRoomRuntime(){
     const m=memory(), spec=roomSpec(state.level,state.room);
@@ -288,7 +292,7 @@
     const es=state.roomEnemies||[];
     const minX=42,maxX=198,minY=82,maxY=164;
     for(const e of es){
-      if(e.dead)continue; const def=ENEMY_DEF[e.type]||ENEMY_DEF.STALFOS; e.timer++; if(e.hit>0)e.hit--;
+      if(e.dead)continue; const def=ENEMY_DEF[e.type]||ENEMY_DEF.STALFOS; e.timer++; if(e.hit>0)e.hit--; if(e.stunned>0)e.stunned--;
       const dx=state.x-e.x,dy=state.y-e.y,dist=Math.max(1,Math.hypot(dx,dy));
       if(def.ai==='fly'){
         e.x+=Math.sin((e.timer+e.phase*17)/14)*def.speed; e.y+=Math.cos((e.timer+e.phase*23)/18)*def.speed;
@@ -313,8 +317,19 @@
         e.x+=e.vx;e.y+=e.vy;
       }
       e.x=Math.max(minX,Math.min(maxX,e.x));e.y=Math.max(minY,Math.min(maxY,e.y));
-      if(state.attackTimer>0 && e.hit===0 && hitbox(swordBox(),{x:e.x,y:e.y,w:e.type==='AQUAMENTUS'?24:16,h:e.type==='AQUAMENTUS'?28:16})){
-        e.hp--;e.hit=8;if(e.hp<=0)e.dead=true;
+      const swordAllowed=!(e.type==='DODONGO'&&e.stunned<=0)&&!(e.type==='DIGDOGGER'&&!e.shrunk)&&e.type!=='GOHMA';
+      if(state.attackTimer>0 && swordAllowed && e.hit===0 && hitbox(swordBox(),{x:e.x,y:e.y,w:e.type==='AQUAMENTUS'?24:16,h:e.type==='AQUAMENTUS'?28:16})){
+        e.hp--;e.hit=8;
+        if(e.hp<=0){
+          e.dead=true;
+          if(!e.splitDone && (e.type==='VIRE'||e.type==='ZOL')){
+            e.splitDone=true;
+            const child=e.type==='VIRE'?'KEESE':'GEL';
+            for(let j=0;j<2;j++){
+              const c=spawnEnemy(child,j,2); c.x=e.x+(j?8:-8); c.y=e.y; es.push(c);
+            }
+          }
+        }
       }
       if(state.invincible<=0 && hitbox({x:state.x,y:state.y,w:14,h:14},{x:e.x,y:e.y,w:16,h:16})){
         state.hp-=def.damage;state.invincible=45;
@@ -334,12 +349,21 @@
       if(p.kind==='enemy'&&state.invincible<=0&&hitbox({x:state.x,y:state.y,w:14,h:14},{x:p.x,y:p.y,w:6,h:6})){
         state.hp-=.5;state.invincible=35;p.life=0;
       }
-      if(p.kind==='player'){
+      if(p.kind==='player'||p.kind==='bomb'||p.kind==='arrow'){
         for(const e of state.roomEnemies||[]){
           if(e.dead)continue;
-          if(hitbox({x:p.x,y:p.y,w:7,h:7},{x:e.x,y:e.y,w:16,h:16})){
-            if(e.type==='KEESE'||e.type==='GEL') e.hp=0;
-            e.hit=12; if(e.hp<=0)e.dead=true; p.life=0; break;
+          const ew=e.type==='DODONGO'?32:16;
+          if(!hitbox({x:p.x,y:p.y,w:7,h:7},{x:e.x,y:e.y,w:ew,h:16}))continue;
+          if(p.kind==='bomb'&&e.type==='DODONGO'){
+            e.hp--;e.stunned=150;e.hit=12;p.life=0;if(e.hp<=0)e.dead=true;break;
+          }
+          if(p.kind==='arrow'&&e.type==='GOHMA'){
+            e.hp--;e.hit=12;p.life=0;if(e.hp<=0)e.dead=true;break;
+          }
+          if(p.kind==='player'){
+            if(e.type==='KEESE'||e.type==='GEL')e.hp=0;
+            else e.stunned=Math.max(e.stunned||0,45);
+            e.hit=12;if(e.hp<=0)e.dead=true;p.life=0;break;
           }
         }
       }
@@ -352,6 +376,7 @@
     if(Math.abs((state.x+8)-r.x)<16&&Math.abs((state.y+8)-r.y)<16){
       const m=memory();m.rewardTaken=true;
       if(r.type==='KEY'){meta.keys++;state.message='KEY +1';}
+      else if(r.type==='BOMBS'){meta.bombs=Math.min(meta.maxBombs||8,meta.bombs+4);state.message='BOMBS +4';}
       else if(r.type==='HEART'){state.hp=Math.min(6,state.hp+1);state.message='HEART CONTAINER';}
       else if(r.type==='TRIFORCE'){meta.triforce.add(state.level);state.message='TRIFORCE';}
       else if(r.type==='ZELDA'){state.message='ZELDA RESCUED';}
@@ -380,8 +405,18 @@
     if(e.keyCode===40){state.vy=1;state.dir='down';return true;}
     if(e.keyCode===32){if(state.attackCooldown<=0){state.attackTimer=8;state.attackCooldown=12;}return true;}
     if(e.keyCode===66){
-      if(meta.items.has('BOOMERANG')){
-        const d=state.dir==='left'?[-1,0]:state.dir==='right'?[1,0]:state.dir==='up'?[0,-1]:[0,1];
+      const alive=(state.roomEnemies||[]).filter(x=>!x.dead);
+      const dodongo=alive.find(x=>x.type==='DODONGO');
+      const digdogger=alive.find(x=>x.type==='DIGDOGGER');
+      const gohma=alive.find(x=>x.type==='GOHMA');
+      const d=state.dir==='left'?[-1,0]:state.dir==='right'?[1,0]:state.dir==='up'?[0,-1]:[0,1];
+      if(dodongo&&meta.bombs>0){
+        meta.bombs--;state.projectiles.push({kind:'bomb',x:state.x+8,y:state.y+8,vx:d[0]*1.45,vy:d[1]*1.45,life:75});
+      }else if(digdogger&&meta.items.has('RECORDER')){
+        digdogger.shrunk=true;digdogger.hp=Math.min(digdogger.hp,4);state.message='DIGDOGGER SHRINKS';state.messageTimer=60;
+      }else if(gohma&&meta.items.has('BOW')){
+        state.projectiles.push({kind:'arrow',x:state.x+8,y:state.y+8,vx:d[0]*3.2,vy:d[1]*3.2,life:65});
+      }else if(meta.items.has('BOOMERANG')||meta.items.has('MAGICAL BOOMERANG')){
         state.projectiles.push({kind:'player',x:state.x+8,y:state.y+8,vx:d[0]*2.4,vy:d[1]*2.4,life:45});
       }
       return true;
@@ -436,6 +471,12 @@
   function drawEnemy(ctx,e){
     if(e.dead)return;
     if(e.hit>0&&e.hit%2===0)return;
+    if(e.type==='DODONGO'){
+      const sp=SPRITES.DODONGO;
+      try{if(typeof enemies!=='undefined'&&enemies.complete)ctx.drawImage(enemies,sp.x,sp.y,sp.w,sp.h,Math.round(e.x),Math.round(e.y),32,16);else throw 0;}
+      catch(_){ctx.fillStyle='#b87820';ctx.fillRect(e.x,e.y,30,14);}
+      return;
+    }
     if(e.type==='AQUAMENTUS'){
       ctx.fillStyle='#30a830';ctx.fillRect(e.x,e.y,24,28);
       ctx.fillStyle='#f8f8f8';ctx.fillRect(e.x+18,e.y+5,4,4);
@@ -490,7 +531,7 @@
     ctx.fillStyle='#000';ctx.fillRect(0,0,256,56);
     ctx.fillStyle=pal[2];ctx.font='8px monospace';ctx.fillText(`LEVEL-${state.level}`,16,15);
     ctx.fillStyle='#fff';ctx.fillText(LEVELS[state.level].name,16,29);
-    ctx.fillText(`KEY x${meta.keys}`,176,15);ctx.fillText(`ROOM ${state.room}`,176,29);
+    ctx.fillText(`KEY x${meta.keys}`,168,15);ctx.fillText(`BOMB x${meta.bombs}`,168,28);ctx.fillText(`ROOM ${state.room}`,168,41);
     for(let i=0;i<3;i++){ctx.fillStyle=i<Math.ceil(state.hp)?'#d82800':'#552000';ctx.fillRect(176+i*10,40,7,7);}
     drawMiniMap(ctx);
   }

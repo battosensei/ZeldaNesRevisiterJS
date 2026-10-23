@@ -31,7 +31,7 @@
 
     button=document.createElement('button');
     button.id='nes-exact-btn'; button.textContent='NES EXACT';
-    button.style.cssText='position:fixed;left:6px;top:6px;z-index:60;background:#000;color:#fff;border:1px solid #fff;padding:7px 9px;font:bold 10px monospace;border-radius:6px;';
+    button.style.cssText='position:fixed;left:6px;top:6px;z-index:60;width:64px;height:20px;padding:0;background:rgba(0,0,0,.58);color:#fff;border:1px solid rgba(255,255,255,.55);font:bold 7px monospace;line-height:18px;border-radius:5px;-webkit-text-size-adjust:none;text-size-adjust:none;';
     button.addEventListener('click',()=> running?stop():start());
     document.body.appendChild(button);
     refreshButton();
@@ -39,7 +39,7 @@
 
   function refreshButton(){
     if(!button) return;
-    button.textContent=running?'RETOUR REVISITED':(romBytes?'NES EXACT':'NES EXACT · CHARGER ROM');
+    button.textContent=running?'RETOUR':(romBytes?'NES EXACT':'CHARGER ROM');
     button.style.opacity=romBytes||running?'1':'.65';
   }
 

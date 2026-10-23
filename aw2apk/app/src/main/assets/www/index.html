@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <title>Advance Wars 2</title>
+  <style>
+    html,body,#game{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none}
+    body{position:fixed;inset:0}
+  </style>
+</head>
+<body>
+  <div id="game"></div>
+  <script>
+    window.EJS_player = "#game";
+    window.EJS_gameName = "Advance Wars 2 - Black Hole Rising";
+    window.EJS_gameUrl = "game.gba";
+    window.EJS_core = "gba";
+    window.EJS_biosUrl = "";
+    window.EJS_pathtodata = "data/";
+    window.EJS_startOnLoaded = true;
+    window.EJS_askBeforeExit = false;
+    window.EJS_threads = false;
+    window.EJS_disableAutoLang = false;
+    window.EJS_color = "#c62828";
+  </script>
+  <script src="data/loader.js"></script>
+</body>
+</html>

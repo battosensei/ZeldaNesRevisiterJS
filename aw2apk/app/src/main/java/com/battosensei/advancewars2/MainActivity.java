@@ -11,6 +11,11 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.JavascriptInterface;
+import android.util.Base64;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 
 import androidx.annotation.Nullable;
 import androidx.webkit.WebViewAssetLoader;
@@ -27,6 +32,7 @@ public class MainActivity extends Activity {
         enterImmersive();
 
         webView = new WebView(this);
+        webView.addJavascriptInterface(new RomBridge(), "AndroidRom");
         webView.setBackgroundColor(Color.BLACK);
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
@@ -57,6 +63,23 @@ public class MainActivity extends Activity {
 
         setContentView(webView);
         webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
+    }
+
+    private final class RomBridge {
+        @JavascriptInterface
+        public String getRomBase64() {
+            try (InputStream in = getAssets().open("www/game.gba");
+                 ByteArrayOutputStream out = new ByteArrayOutputStream(8 * 1024 * 1024)) {
+                byte[] buffer = new byte[64 * 1024];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }
+                return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
+            } catch (Exception e) {
+                return "";
+            }
+        }
     }
 
     private void enterImmersive() {

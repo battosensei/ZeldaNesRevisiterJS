@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>ZeldaJavaScriptRevisited</title>
+  <style id="mobile-ui-style">
+:root{--control-alpha:.22}
+*{box-sizing:border-box;-webkit-text-size-adjust:none;text-size-adjust:none}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;overscroll-behavior:none}
+body{display:flex;align-items:center;justify-content:center;font-family:monospace}
+#game-shell{position:relative;width:min(100vw,calc(100vh * 1.3333333));height:min(100vh,calc(100vw / 1.3333333));display:flex;align-items:center;justify-content:center}
+#myCanvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;background:#000;width:100%;height:100%;max-width:100%;max-height:100%}
+#mobile-controls{position:fixed;inset:0;pointer-events:none;z-index:50;user-select:none;-webkit-user-select:none}
+#mobile-controls button{pointer-events:auto;position:absolute;margin:0;padding:0;border:2px solid rgba(255,255,255,.34);background:rgba(0,0,0,.28);color:rgba(255,255,255,.94);font:bold 12px monospace;line-height:1;border-radius:8px;touch-action:none;-webkit-tap-highlight-color:transparent;box-shadow:none}
+#mobile-controls button:active,#mobile-controls button.pressed{background:rgba(255,255,255,.20);border-color:rgba(255,255,255,.60)}
+.dpad{width:52px;height:52px;font-size:22px!important;border-radius:12px!important}
+.up{left:82px;bottom:142px}.down{left:82px;bottom:34px}.left{left:28px;bottom:88px}.right{left:136px;bottom:88px}
+.action{width:64px;height:64px;border-radius:50%!important;font-size:26px!important}
+.btn-a{right:28px;bottom:118px}.btn-b{right:108px;bottom:38px}
+.system{height:28px;font-size:10px!important;border-radius:7px!important}
+.btn-start{left:calc(50% + 8px);bottom:12px;width:68px}
+.btn-select{left:calc(50% - 76px);bottom:12px;width:68px}
+.btn-fullscreen{right:8px;top:8px;width:36px;height:28px;font-size:14px!important;border-radius:7px!important}
+@media (hover:hover) and (pointer:fine){#mobile-controls{display:none}}
+</style>
+</head>
+<body>
+<div id="game-shell"><canvas id="myCanvas" width="256" height="240"></canvas></div>
+<div id="mobile-controls" aria-label="Commandes tactiles">
+  <button class="dpad up" data-key="38" aria-label="Haut">▲</button>
+  <button class="dpad down" data-key="40" aria-label="Bas">▼</button>
+  <button class="dpad left" data-key="37" aria-label="Gauche">◀</button>
+  <button class="dpad right" data-key="39" aria-label="Droite">▶</button>
+  <button class="action btn-a" data-key="32" aria-label="A / épée">A</button>
+  <button class="action btn-b" data-key="66" aria-label="B / objet">B</button>
+  <button class="system btn-start" data-key="13" aria-label="Start">START</button>
+  <button class="system btn-select" data-key="16" aria-label="Select">SELECT</button>
+  <button class="btn-fullscreen" id="fullscreen-btn" aria-label="Plein écran">⛶</button>
+</div>
+<script src="mapsFileEdited.js"></script>
+<script src="jsnes.min.js"></script>
+<script src="dungeonNES.js"></script>
+<script src="dungeonQuest1.js"></script>
+<script src="exactNES.js"></script>
+<script type="text/javascript" src="./main.js"></script>
+<script>
+(function(){
+  const held=new Map();
+  function emit(type,keyCode){
+    const e=new KeyboardEvent(type,{bubbles:true,cancelable:true,keyCode:keyCode,which:keyCode});
+    try{Object.defineProperty(e,'keyCode',{get:()=>keyCode});Object.defineProperty(e,'which',{get:()=>keyCode});}catch(_){}
+    document.dispatchEvent(e);
+  }
+  document.querySelectorAll('#mobile-controls [data-key]').forEach(btn=>{
+    const code=Number(btn.dataset.key);
+    const down=(ev)=>{ev.preventDefault(); if(held.get(code)) return; held.set(code,true); btn.classList.add('pressed'); emit('keydown',code); try{btn.setPointerCapture(ev.pointerId)}catch(_){}};
+    const up=(ev)=>{ev.preventDefault(); if(!held.get(code)) return; held.delete(code); btn.classList.remove('pressed'); emit('keyup',code);};
+    btn.addEventListener('pointerdown',down); btn.addEventListener('pointerup',up); btn.addEventListener('pointercancel',up); btn.addEventListener('lostpointercapture',up);
+  });
+  document.getElementById('fullscreen-btn').addEventListener('pointerdown',async ev=>{ev.preventDefault();try{if(!document.fullscreenElement) await document.documentElement.requestFullscreen(); else await document.exitFullscreen();}catch(_){}});
+  window.addEventListener('blur',()=>{ for(const [code] of held){ emit('keyup',code); } held.clear(); document.querySelectorAll('#mobile-controls .pressed').forEach(x=>x.classList.remove('pressed')); });
+})();
+</script>
+</body>
+</html>

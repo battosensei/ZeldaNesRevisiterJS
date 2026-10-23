@@ -342,7 +342,7 @@
   async function loadOriginalRom(file){
     const buf=new Uint8Array(await file.arrayBuffer());
     if(buf.length<0x19b00 || buf[0]!==0x4e || buf[1]!==0x45 || buf[2]!==0x53 || buf[3]!==0x1a) throw new Error('Fichier iNES invalide.');
-    state.rom=buf; state.exactRom=true;
+    state.rom=buf; state.exactRom=true;\n    if(global.NESExact && global.NESExact.setRom) global.NESExact.setRom(buf);
     state.romData={decodeUniqueRoom:(i)=>decodeUniqueRoom(buf,i),decodeRoomAttrs:(g,i)=>decodeRoomAttrs(buf,g,i)};
     state.message='ORIGINAL NES ROOM DATA LOADED'; state.messageTimer=160;
     return true;

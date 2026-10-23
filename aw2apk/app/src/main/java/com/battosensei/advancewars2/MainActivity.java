@@ -65,20 +65,39 @@ public class MainActivity extends Activity {
         webView.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
     }
 
+    private byte[] romBytes;
+
+    private synchronized byte[] getRomBytes() {
+        if (romBytes != null) return romBytes;
+        try (InputStream in = getAssets().open("www/game.gba");
+             ByteArrayOutputStream out = new ByteArrayOutputStream(8 * 1024 * 1024)) {
+            byte[] buffer = new byte[64 * 1024];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            romBytes = out.toByteArray();
+            return romBytes;
+        } catch (Exception e) {
+            romBytes = new byte[0];
+            return romBytes;
+        }
+    }
+
     private final class RomBridge {
         @JavascriptInterface
-        public String getRomBase64() {
-            try (InputStream in = getAssets().open("www/game.gba");
-                 ByteArrayOutputStream out = new ByteArrayOutputStream(8 * 1024 * 1024)) {
-                byte[] buffer = new byte[64 * 1024];
-                int read;
-                while ((read = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, read);
-                }
-                return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP);
-            } catch (Exception e) {
-                return "";
-            }
+        public int getRomSize() {
+            return getRomBytes().length;
+        }
+
+        @JavascriptInterface
+        public String getRomChunk(int offset, int length) {
+            byte[] rom = getRomBytes();
+            if (offset < 0 || length <= 0 || offset >= rom.length) return "";
+            int safeLength = Math.min(Math.min(length, 256 * 1024), rom.length - offset);
+            byte[] chunk = new byte[safeLength];
+            System.arraycopy(rom, offset, chunk, 0, safeLength);
+            return Base64.encodeToString(chunk, Base64.NO_WRAP);
         }
     }
 

@@ -1,0 +1,64 @@
+name: Build Advance Wars 2 Android APK
+
+on:
+  push:
+    branches:
+      - chat/advancewars2-apk-20261023
+    paths:
+      - "aw2apk/**"
+      - ".github/workflows/build-aw2-apk.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Prepare offline EmulatorJS GBA runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          DATA="aw2apk/app/src/main/assets/www/data"
+          mkdir -p "$DATA/cores"
+          BASE="https://cdn.emulatorjs.org/stable/data"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/loader.js" -o "$DATA/loader.js"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.js" -o "$DATA/emulator.min.js"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.css" -o "$DATA/emulator.min.css"
+          curl -fL --retry 5 --retry-delay 2 "$BASE/cores/mgba-wasm.data" -o "$DATA/cores/mgba-wasm.data"
+          truncate -s 8388608 aw2apk/app/src/main/assets/www/game.gba
+
+      - name: Build unsigned release APK
+        working-directory: aw2apk
+        run: gradle --no-daemon :app:assembleRelease
+
+      - name: Collect APK signer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp aw2apk/app/build/outputs/apk/release/app-release-unsigned.apk dist/AdvanceWars2-wrapper-unsigned.apk
+          BUILD_TOOLS="$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          test -f "$BUILD_TOOLS/lib/apksigner.jar"
+          cp "$BUILD_TOOLS/lib/apksigner.jar" dist/apksigner.jar
+          printf '%s\n' "$BUILD_TOOLS" > dist/build-tools-version.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: advancewars2-apk-tooling
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1

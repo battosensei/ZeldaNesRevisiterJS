@@ -33,19 +33,24 @@ jobs:
         run: |
           set -euo pipefail
           DATA="aw2apk/app/src/main/assets/www/data"
-          mkdir -p "$DATA/cores"
-          BASE="https://cdn.emulatorjs.org/stable/data"
-          curl -fL --retry 5 --retry-delay 2 "$BASE/loader.js" -o "$DATA/loader.js"
-          curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.js" -o "$DATA/emulator.min.js"
-          curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.css" -o "$DATA/emulator.min.css"
-          for CORE in \
-            mgba-wasm.data \
-            mgba-legacy-wasm.data \
-            mgba-thread-wasm.data \
-            mgba-thread-legacy-wasm.data
-          do
-            curl -fL --retry 5 --retry-delay 2 "$BASE/cores/$CORE" -o "$DATA/cores/$CORE"
-          done
+          rm -rf "$DATA"
+          mkdir -p "$DATA"
+          curl -fL --retry 5 --retry-delay 2 \
+            "https://cdn.emulatorjs.org/stable/data/emulator.min.zip" \
+            -o /tmp/emulatorjs-data.zip
+          rm -rf /tmp/emulatorjs-data
+          mkdir -p /tmp/emulatorjs-data
+          unzip -q /tmp/emulatorjs-data.zip -d /tmp/emulatorjs-data
+          LOADER="$(find /tmp/emulatorjs-data -type f -name loader.js | head -n 1)"
+          test -n "$LOADER"
+          DATA_SRC="$(dirname "$LOADER")"
+          cp -a "$DATA_SRC"/. "$DATA"/
+          test -f "$DATA/loader.js"
+          test -f "$DATA/emulator.min.js"
+          test -f "$DATA/emulator.min.css"
+          test -f "$DATA/cores/mgba-wasm.data"
+          test -f "$DATA/cores/mgba-legacy-wasm.data"
+          printf 'Offline runtime files: %s\n' "$(find "$DATA" -type f | wc -l)"
           truncate -s 8388608 aw2apk/app/src/main/assets/www/game.gba
 
       - name: Build unsigned release APK

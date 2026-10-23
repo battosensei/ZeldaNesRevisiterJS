@@ -70,6 +70,8 @@ let cursorY = -152;
 let BPressed = false;
 
 let currentEquippedItem = -1;
+let overworldSwordBeams = [];
+let overworldCombatFx = [];
 
 gameObjects = maps[119].gameobjects;
 gameMap = maps[119].map;
@@ -119,7 +121,11 @@ function keyDownHandler(e){
             isAttacking = true;
 			currentAnimation = 0;
 			canAttackAgain = false;
-			playSound("./sounds/LOZ_sword_slash.wav")
+			playSound("./sounds/LOZ_sword_slash.wav");
+			if(hasSword && currentLinkHearts >= linkHearts && overworldSwordBeams.length == 0)
+			{
+				spawnOverworldSwordBeam();
+			}
         }
 	if(e.keyCode == 13 && !hasGameStarted)
 	{
@@ -1705,6 +1711,7 @@ function gameObjectCollision(x, y, objects, isLink, isSword, isBomb,
 								{
 									//
 									objects[i].health -= 1;
+									overworldCombatFx.push({kind:"hit",x:objects[i].x+8,y:objects[i].y+8,life:10,max:10});
 									objects[i].needsBounce = true;
 									getBounceLoc(objects[i], false,
 											direction);
@@ -1745,6 +1752,7 @@ function gameObjectCollision(x, y, objects, isLink, isSword, isBomb,
 								{
 									//
 									objects[i].health -= 1;
+									overworldCombatFx.push({kind:"hit",x:objects[i].x+8,y:objects[i].y+8,life:10,max:10});
 									objects[i].needsBounce = true;
 									getBounceLoc(objects[i], false,
 											direction);
@@ -1771,6 +1779,7 @@ function gameObjectCollision(x, y, objects, isLink, isSword, isBomb,
 								{
 									//
 									objects[i].health -= 1;
+									overworldCombatFx.push({kind:"hit",x:objects[i].x+8,y:objects[i].y+8,life:10,max:10});
 									objects[i].needsBounce = true;
 									getBounceLoc(objects[i], false,
 											direction);
@@ -1797,6 +1806,7 @@ function gameObjectCollision(x, y, objects, isLink, isSword, isBomb,
 								{
 									//
 									objects[i].health -= 1;
+									overworldCombatFx.push({kind:"hit",x:objects[i].x+8,y:objects[i].y+8,life:10,max:10});
 									objects[i].needsBounce = true;
 									getBounceLoc(objects[i], false,
 											direction);
@@ -1823,6 +1833,7 @@ function gameObjectCollision(x, y, objects, isLink, isSword, isBomb,
 								{
 									//
 									objects[i].health -= 1;
+									overworldCombatFx.push({kind:"hit",x:objects[i].x+8,y:objects[i].y+8,life:10,max:10});
 									objects[i].needsBounce = true;
 									getBounceLoc(objects[i], false,
 											direction);
@@ -2302,6 +2313,97 @@ function drawInventoryScreen(offset)
 	}
 }
 
+function spawnOverworldSwordBeam()
+{
+	let dx = 0;
+	let dy = 0;
+	if(lastButtonPressed == "left") dx = -3.2;
+	else if(lastButtonPressed == "right") dx = 3.2;
+	else if(lastButtonPressed == "up") dy = -3.2;
+	else dy = 3.2;
+
+	overworldSwordBeams.push({
+		x: linkX + 8 + (dx == 0 ? 0 : (dx > 0 ? 12 : -12)),
+		y: linkY + 8 + (dy == 0 ? 0 : (dy > 0 ? 12 : -12)),
+		dx: dx,
+		dy: dy,
+		life: 80
+	});
+	playSound("./sounds/LOZ_Sword_Shoot.wav");
+}
+
+function updateDrawOverworldSwordBeams()
+{
+	for(let b = overworldSwordBeams.length - 1; b >= 0; b--)
+	{
+		let beam = overworldSwordBeams[b];
+		beam.x += beam.dx;
+		beam.y += beam.dy;
+		beam.life--;
+
+		let hit = false;
+		for(let i = 0; i < gameObjects.length; i++)
+		{
+			let obj = gameObjects[i];
+			if(!obj.isEnemy || obj.health <= 0) continue;
+			if(beam.x - 4 <= obj.x + obj.width &&
+			   beam.x + 6 >= obj.x &&
+			   beam.y - 4 <= obj.y + obj.height &&
+			   beam.y + 6 >= obj.y)
+			{
+				obj.health -= 1;
+				obj.needsBounce = true;
+				getBounceLoc(obj, false, lastButtonPressed);
+				overworldCombatFx.push({kind:obj.health <= 0 ? "death" : "hit",x:obj.x+8,y:obj.y+8,life:obj.health <= 0 ? 18 : 10,max:obj.health <= 0 ? 18 : 10});
+				playSound(obj.health <= 0 ? "./sounds/LOZ_Enemy_Die.wav" : "./sounds/LOZ_Enemy_Hit.wav");
+				hit = true;
+				break;
+			}
+		}
+
+		ctx.fillStyle = "white";
+		if(Math.abs(beam.dx) > 0) {
+			ctx.fillRect(beam.x - 5, beam.y - 2, 12, 4);
+			ctx.fillStyle = "rgb(80,200,255)";
+			ctx.fillRect(beam.x - 3, beam.y - 1, 8, 2);
+		} else {
+			ctx.fillRect(beam.x - 2, beam.y - 5, 4, 12);
+			ctx.fillStyle = "rgb(80,200,255)";
+			ctx.fillRect(beam.x - 1, beam.y - 3, 2, 8);
+		}
+
+		if(hit || beam.life <= 0 || beam.x < 8 || beam.x > 248 || beam.y < 56 || beam.y > 232)
+		{
+			overworldSwordBeams.splice(b,1);
+		}
+	}
+}
+
+function updateDrawOverworldCombatFx()
+{
+	for(let i = overworldCombatFx.length - 1; i >= 0; i--)
+	{
+		let fx = overworldCombatFx[i];
+		fx.life--;
+		if(fx.kind == "death")
+		{
+			ctx.fillStyle = fx.life % 2 ? "white" : "rgb(248,80,32)";
+			let r = (1 - fx.life/fx.max) * 10 + 2;
+			ctx.fillRect(fx.x-r,fx.y-1,4,2);
+			ctx.fillRect(fx.x+r-4,fx.y-1,4,2);
+			ctx.fillRect(fx.x-1,fx.y-r,2,4);
+			ctx.fillRect(fx.x-1,fx.y+r-4,2,4);
+		}
+		else
+		{
+			ctx.fillStyle = fx.life % 2 ? "white" : "rgb(248,184,0)";
+			ctx.fillRect(fx.x-5,fx.y-1,10,2);
+			ctx.fillRect(fx.x-1,fx.y-5,2,10);
+		}
+		if(fx.life <= 0) overworldCombatFx.splice(i,1);
+	}
+}
+
 function draw () {
    setTimeout(function() {
    requestAnimationFrame(draw);
@@ -2345,6 +2447,8 @@ function draw () {
 			}
 			drawMap(gameMap);
 			drawGameObjects();
+			updateDrawOverworldSwordBeams();
+			updateDrawOverworldCombatFx();
 			drawLink();
 			drawHUD(inventoryOffset);
 			gameObjectCollision(linkX, linkY, gameObjects, true, false, false, false, false);

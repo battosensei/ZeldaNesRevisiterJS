@@ -14,7 +14,18 @@
   <script>
     window.EJS_player = "#game";
     window.EJS_gameName = "Advance Wars 2 - Black Hole Rising";
-    window.EJS_gameUrl = "game.gba";
+    (function () {
+      try {
+        var b64 = window.AndroidRom && window.AndroidRom.getRomBase64();
+        if (!b64) throw new Error("Native ROM unavailable");
+        var binary = atob(b64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        window.EJS_gameUrl = bytes;
+      } catch (e) {
+        window.EJS_gameUrl = "game.gba";
+      }
+    })();
     window.EJS_core = "gba";
     window.EJS_biosUrl = "";
     window.EJS_pathtodata = "data/";

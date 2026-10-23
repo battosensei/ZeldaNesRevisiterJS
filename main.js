@@ -2,7 +2,7 @@ let canvas = document.getElementById("myCanvas");
 let ctx = canvas.getContext("2d");
 document.addEventListener("keydown",keyDownHandler, false);
 document.addEventListener("keyup",keyUpHandler,false);
-document.body.style.zoom = "288%";
+document.body.style.zoom = "100%";
 ///potential ugly fix for firefox users....
 //let nativeResWidth = 256;
 //let nativeResHeight = 240;
@@ -38,7 +38,7 @@ let animationCounter = 0;
 let currentAnimation = 0;
 let animationSpeed = 10;
 let lastButtonPressed = "up";
-let linkY = 208;
+let linkY = 184;
 let linkX = 120;
 let linkHearts = 3;
 let linkNeedsToBounce = false;
@@ -126,7 +126,7 @@ function keyDownHandler(e){
 		hasGameStarted = true;
 		backgroundMusic.play();
 	}
-	if(e.keyCode == 13 && hasGameStarted)
+	else if(e.keyCode == 13 && hasGameStarted)
 	{
 		if(!needInventoryScreen)
 		{
@@ -216,22 +216,22 @@ function drawLink()
 		
 		if(lastButtonPressed == "down")
 		{
-			ctx.drawImage(link1, 0, 60, 
+			ctx.drawImage(link1, 0, 0, 
 			16, 16, linkX, linkY, 16, 16);
 		}
 		if(lastButtonPressed == "up")
 		{
-			ctx.drawImage(link1, 62, 60, 
+			ctx.drawImage(link1, 62, 0, 
 			16, 16, linkX, linkY, 16, 16);
 		}
 		if(lastButtonPressed == "left")
 		{
-			ctx.drawImage(link1, 30, 60, 
+			ctx.drawImage(link1, 30, 0, 
 			16, 16, linkX, linkY, 16, 16);
 		}
 		if(lastButtonPressed == "right")
 		{
-			ctx.drawImage(link1, 91, 60, 
+			ctx.drawImage(link1, 91, 0, 
 			16, 16, linkX, linkY, 16, 16);
 		}
 		
@@ -2344,8 +2344,8 @@ function draw () {
 				linkIsInvincible = false;
 			}
 			drawMap(gameMap);
-			drawLink();
 			drawGameObjects();
+			drawLink();
 			drawHUD(inventoryOffset);
 			gameObjectCollision(linkX, linkY, gameObjects, true, false, false, false, false);
 		}

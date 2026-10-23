@@ -23,9 +23,12 @@ jobs:
           rsync -a --exclude '.git' --exclude '.github' --exclude 'android' ./ android/app/src/main/assets/www/
           cp android/web/index.html android/app/src/main/assets/www/index.html
           cp android/web/dungeonNES.js android/app/src/main/assets/www/dungeonNES.js
+          cp android/web/exactNES.js android/app/src/main/assets/www/exactNES.js
+          cp android/web/JSNES-LICENSE.txt android/app/src/main/assets/www/JSNES-LICENSE.txt
+          curl -fL "https://unpkg.com/jsnes@2.1.0/dist/jsnes.min.js" -o android/app/src/main/assets/www/jsnes.min.js
           python3 android/patch_main.py
           node --check android/app/src/main/assets/www/main.js
-          node --check android/app/src/main/assets/www/dungeonNES.js
+          node --check android/app/src/main/assets/www/dungeonNES.js\n          node --check android/app/src/main/assets/www/exactNES.js\n          test -s android/app/src/main/assets/www/jsnes.min.js
       - name: Build debug APK
         working-directory: android
         run: gradle :app:assembleDebug --stacktrace

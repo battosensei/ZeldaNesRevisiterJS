@@ -352,9 +352,9 @@
   function installRomLoader(){
     if(typeof document==='undefined' || document.getElementById('zelda-rom-loader')) return;
     const wrap=document.createElement('div'); wrap.id='zelda-rom-loader';
-    wrap.style.cssText='position:fixed;right:6px;bottom:6px;z-index:20;font:10px monospace;background:#000;color:#fff;padding:4px;border:1px solid #777;opacity:.82';
+    wrap.style.cssText='display:none;position:fixed;z-index:-1;width:1px;height:1px;overflow:hidden';
     const lab=document.createElement('label'); lab.textContent='DONJONS NES EXACTS · ROM: ';
-    const inp=document.createElement('input'); inp.type='file'; inp.accept='.nes,application/octet-stream'; inp.style.cssText='width:145px;font-size:9px';
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='.nes,application/octet-stream'; inp.style.cssText='position:absolute;width:1px;height:1px;opacity:0';
     const st=document.createElement('span'); st.textContent=' non chargee';
     inp.addEventListener('change',async()=>{try{if(inp.files&&inp.files[0]){await loadOriginalRom(inp.files[0]);st.textContent=' OK';st.style.color='#55ff55';}}catch(err){st.textContent=' invalide';st.style.color='#ff5555';}});
     lab.appendChild(inp);wrap.appendChild(lab);wrap.appendChild(st);document.body.appendChild(wrap);

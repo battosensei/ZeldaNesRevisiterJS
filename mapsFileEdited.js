@@ -3012,15 +3012,6 @@ gO.newLinkY = 220;
 gO.isPortal = true;
 gameObjects119.push(gO); 
 
-gO = new GameObject()
-gO.x = 112; 
-gO.y = 112; 
-gO.width = 16; 
-gO.height = 16;
-gO.isPickUpItem = true;
-gO.pickUpItemNum = 3;
-gameObjects119.push(gO);
-
 gO = new GameObject() 
  gO.x = 2 * 16; 
  gO.y = 10 * 16; 

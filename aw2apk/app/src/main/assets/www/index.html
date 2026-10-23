@@ -16,11 +16,18 @@
     window.EJS_gameName = "Advance Wars 2 - Black Hole Rising";
     (function () {
       try {
-        var b64 = window.AndroidRom && window.AndroidRom.getRomBase64();
-        if (!b64) throw new Error("Native ROM unavailable");
-        var binary = atob(b64);
-        var bytes = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        if (!window.AndroidRom) throw new Error("Native ROM bridge unavailable");
+        var total = window.AndroidRom.getRomSize();
+        if (!total || total < 1024) throw new Error("Native ROM unavailable");
+        var bytes = new Uint8Array(total);
+        var chunkSize = 256 * 1024;
+        for (var offset = 0; offset < total; offset += chunkSize) {
+          var want = Math.min(chunkSize, total - offset);
+          var b64 = window.AndroidRom.getRomChunk(offset, want);
+          if (!b64) throw new Error("ROM chunk unavailable at " + offset);
+          var binary = atob(b64);
+          for (var i = 0; i < binary.length; i++) bytes[offset + i] = binary.charCodeAt(i);
+        }
         window.EJS_gameUrl = bytes;
       } catch (e) {
         window.EJS_gameUrl = "game.gba";

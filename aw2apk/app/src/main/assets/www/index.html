@@ -28,7 +28,11 @@
           var binary = atob(b64);
           for (var i = 0; i < binary.length; i++) bytes[offset + i] = binary.charCodeAt(i);
         }
-        window.EJS_gameUrl = bytes;
+        window.EJS_gameUrl = new File(
+          [bytes],
+          "Advance-Wars-2-Black-Hole-Rising.gba",
+          { type: "application/octet-stream" }
+        );
       } catch (e) {
         window.EJS_gameUrl = "game.gba";
       }

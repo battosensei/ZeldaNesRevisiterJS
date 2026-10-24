@@ -1,0 +1,31 @@
+name: Export Android Signing Tools
+
+on:
+  push:
+    branches:
+      - build/layton-apk-wrapper-20261024
+    paths:
+      - '.github/workflows/export-android-tools.yml'
+  workflow_dispatch:
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Collect zipalign and apksigner
+        shell: bash
+        run: |
+          set -euxo pipefail
+          BT="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          mkdir -p out/lib
+          cp "$BT/zipalign" out/
+          cp "$BT/apksigner" out/
+          cp "$BT/lib/apksigner.jar" out/lib/
+          chmod +x out/zipalign out/apksigner
+          "$BT/zipalign" -h >/dev/null 2>&1 || true
+          "$BT/apksigner" --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-signing-tools
+          path: out/

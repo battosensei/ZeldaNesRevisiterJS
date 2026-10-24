@@ -52,20 +52,20 @@ old = """        library = new RomLibrary(getFilesDir());
         String requestedRomId = getIntent().getStringExtra(EXTRA_ROM_ID);"""
 new = """        library = new RomLibrary(getFilesDir());
         installBundledRom();
-        String requestedRomId = "advancewars2";"""
+        String requestedRomId = "pokemonemeraude";"""
 if old not in src:
     raise SystemExit("MainActivity startup block not found")
 src = src.replace(old, new)
 
 anchor = "    private void applyOrientation() {"
 method = """    private void installBundledRom() {
-        final String romId = "advancewars2";
+        final String romId = "pokemonemeraude";
         File directory = new File(getFilesDir(), "roms");
         if (!directory.isDirectory() && !directory.mkdirs()) {
             throw new IllegalStateException("Could not create ROM directory");
         }
         File destination = new File(directory, romId + ".gba");
-        if (!destination.isFile() || destination.length() != 8388608L) {
+        if (!destination.isFile() || destination.length() != 16777216L) {
             File temporary = new File(directory, romId + ".tmp");
             try (InputStream in = getAssets().open("game.gba");
                  FileOutputStream out = new FileOutputStream(temporary)) {
@@ -91,7 +91,7 @@ method = """    private void installBundledRom() {
         try {
             library.record(
                 romId,
-                "Advance Wars 2 - Black Hole Rising",
+                "Pokémon Émeraude",
                 RomSystem.GBA,
                 System.currentTimeMillis());
         } catch (IOException e) {
@@ -108,12 +108,12 @@ java.write_text(src.replace(anchor, method + anchor))
 
 strings = root / "app/src/main/res/values/strings.xml"
 s = strings.read_text()
-s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Advance Wars 2</string>")
+s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Pokémon Émeraude</string>")
 strings.write_text(s)
 
 gradle = root / "app/build.gradle"
 g = gradle.read_text()
-g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.advancewars2native'")
+g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.pokemonemeraudenative'")
 marker = "    buildTypes {"
 if marker not in g:
     raise SystemExit("Gradle buildTypes marker not found")
@@ -126,5 +126,5 @@ gradle.write_text(g)
 
 assets = root / "app/src/main/assets"
 assets.mkdir(parents=True, exist_ok=True)
-(assets / "game.gba").write_bytes(bytes(8388608))
+(assets / "game.gba").write_bytes(bytes(16777216))
 print("Native bundled-ROM patch applied")

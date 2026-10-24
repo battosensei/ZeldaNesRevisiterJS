@@ -52,14 +52,14 @@ old = """        library = new RomLibrary(getFilesDir());
         String requestedRomId = getIntent().getStringExtra(EXTRA_ROM_ID);"""
 new = """        library = new RomLibrary(getFilesDir());
         installBundledRom();
-        String requestedRomId = "pokemonemeraude";"""
+        String requestedRomId = "zeldaminish";"""
 if old not in src:
     raise SystemExit("MainActivity startup block not found")
 src = src.replace(old, new)
 
 anchor = "    private void applyOrientation() {"
 method = """    private void installBundledRom() {
-        final String romId = "pokemonemeraude";
+        final String romId = "zeldaminish";
         File directory = new File(getFilesDir(), "roms");
         if (!directory.isDirectory() && !directory.mkdirs()) {
             throw new IllegalStateException("Could not create ROM directory");
@@ -91,7 +91,7 @@ method = """    private void installBundledRom() {
         try {
             library.record(
                 romId,
-                "Pokémon Émeraude",
+                "The Minish Cap",
                 RomSystem.GBA,
                 System.currentTimeMillis());
         } catch (IOException e) {
@@ -108,12 +108,12 @@ java.write_text(src.replace(anchor, method + anchor))
 
 strings = root / "app/src/main/res/values/strings.xml"
 s = strings.read_text()
-s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Pokémon Émeraude</string>")
+s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">The Minish Cap</string>")
 strings.write_text(s)
 
 gradle = root / "app/build.gradle"
 g = gradle.read_text()
-g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.pokemonemeraudenative'")
+g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.zeldaminishnative'")
 marker = "    buildTypes {"
 if marker not in g:
     raise SystemExit("Gradle buildTypes marker not found")
@@ -127,4 +127,27 @@ gradle.write_text(g)
 assets = root / "app/src/main/assets"
 assets.mkdir(parents=True, exist_ok=True)
 (assets / "game.gba").write_bytes(bytes(16777216))
-print("Native bundled-ROM patch applied")
+icon = root / "app/src/main/res/drawable/ic_launcher_foreground.xml"
+icon.write_text("""<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#2F6B3D"
+        android:pathData="M12,74 Q29,24 78,20 Q94,20 82,54 L54,92 L12,74 Z" />
+    <path android:fillColor="#58A84F"
+        android:pathData="M20,70 Q48,58 84,58 Q64,74 34,78 Q24,78 20,70 Z" />
+    <path android:fillColor="#D9B34A"
+        android:pathData="M54,24 L43,42 L65,42 Z M42,44 L31,62 L53,62 Z M56,44 L78,62 L67,62 Z M48,56 L60,56 L54,67 Z" />
+    <path android:fillColor="#F4E6A8"
+        android:pathData="M54,18 L49,26 L59,26 Z" />
+</vector>""")
+
+bg = root / "app/src/main/res/values/ic_launcher_background.xml"
+bg.write_text("""<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#17311F</color>
+</resources>
+""")
+
+print("Native Zelda Minish Cap patch applied")

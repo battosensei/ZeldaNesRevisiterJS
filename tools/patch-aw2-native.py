@@ -104,6 +104,13 @@ if anchor not in src:
     raise SystemExit("MainActivity method anchor not found")
 java.write_text(src.replace(anchor, method + anchor))
 
+
+
+strings = root / "app/src/main/res/values/strings.xml"
+s = strings.read_text()
+s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Advance Wars 2</string>")
+strings.write_text(s)
+
 gradle = root / "app/build.gradle"
 g = gradle.read_text()
 marker = "    buildTypes {"

@@ -113,6 +113,7 @@ strings.write_text(s)
 
 gradle = root / "app/build.gradle"
 g = gradle.read_text()
+g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.advancewars2native'")
 marker = "    buildTypes {"
 if marker not in g:
     raise SystemExit("Gradle buildTypes marker not found")

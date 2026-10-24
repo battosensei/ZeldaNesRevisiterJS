@@ -1,0 +1,248 @@
+name: Build Layton Android Wrapper
+
+on:
+  push:
+    branches:
+      - build/layton-apk-wrapper-20261024
+    paths:
+      - '.github/workflows/build-layton-wrapper.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Create clean Android project
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p android/app/src/main/java/com/layton/wrapper
+          mkdir -p android/app/src/main/assets
+          mkdir -p android/app/src/main/res/drawable
+
+          cat > android/settings.gradle <<'GRADLE'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name = 'LaytonWrapper'
+          include ':app'
+          GRADLE
+
+          cat > android/build.gradle <<'GRADLE'
+          plugins { id 'com.android.application' version '8.7.3' apply false }
+          GRADLE
+
+          cat > android/app/build.gradle <<'GRADLE'
+          plugins { id 'com.android.application' }
+          android {
+            namespace 'com.layton.wrapper'
+            compileSdk 35
+            defaultConfig {
+              applicationId 'com.layton.curiousvillage'
+              minSdk 26
+              targetSdk 35
+              versionCode 3
+              versionName '3.0'
+            }
+          }
+          GRADLE
+
+          cat > android/app/src/main/AndroidManifest.xml <<'XML'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application
+              android:label="Professor Layton"
+              android:icon="@drawable/app_icon"
+              android:theme="@android:style/Theme.Material.Light.NoActionBar"
+              android:hardwareAccelerated="true"
+              android:usesCleartextTraffic="false"
+              android:allowBackup="false">
+              <activity
+                android:name=".MainActivity"
+                android:screenOrientation="portrait"
+                android:exported="true">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN"/>
+                  <category android:name="android.intent.category.LAUNCHER"/>
+                </intent-filter>
+              </activity>
+            </application>
+          </manifest>
+          XML
+
+          cat > android/app/src/main/res/drawable/app_icon.xml <<'XML'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="96dp" android:height="96dp"
+              android:viewportWidth="96" android:viewportHeight="96">
+            <path android:fillColor="#24170F" android:pathData="M0,0h96v96h-96z"/>
+            <path android:fillColor="#D8B36A" android:pathData="M20,70 L48,14 L76,70 Z"/>
+            <path android:fillColor="#24170F" android:pathData="M34,56 L48,30 L62,56 Z"/>
+            <path android:fillColor="#D8B36A" android:pathData="M42,70h12v12h-12z"/>
+          </vector>
+          XML
+
+          cat > android/app/src/main/java/com/layton/wrapper/MainActivity.java <<'JAVA'
+          package com.layton.wrapper;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.graphics.Color;
+          import android.webkit.WebChromeClient;
+          import android.webkit.WebResourceRequest;
+          import android.webkit.WebResourceResponse;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import java.io.InputStream;
+          import java.util.HashMap;
+          import java.util.Locale;
+          import java.util.Map;
+
+          public class MainActivity extends Activity {
+            private WebView web;
+
+            @Override
+            protected void onCreate(Bundle state) {
+              super.onCreate(state);
+
+              web = new WebView(this);
+              web.setBackgroundColor(Color.BLACK);
+
+              WebSettings s = web.getSettings();
+              s.setJavaScriptEnabled(true);
+              s.setDomStorageEnabled(true);
+              s.setAllowFileAccess(false);
+              s.setAllowContentAccess(false);
+              s.setMediaPlaybackRequiresUserGesture(false);
+              s.setUseWideViewPort(true);
+              s.setLoadWithOverviewMode(true);
+
+              web.setWebChromeClient(new WebChromeClient());
+              web.setWebViewClient(new WebViewClient() {
+                @Override
+                public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                  String url = request.getUrl().toString();
+                  if (!url.startsWith("https://app.local/")) return null;
+
+                  String path = request.getUrl().getPath();
+                  if (path == null || path.equals("/") || path.isEmpty()) path = "/index.html";
+                  if (path.startsWith("/")) path = path.substring(1);
+                  if (path.contains("..")) return empty404();
+
+                  try {
+                    InputStream in = getAssets().open(path);
+                    String mime = mimeFor(path);
+                    Map<String,String> headers = new HashMap<>();
+                    headers.put("Access-Control-Allow-Origin", "*");
+                    headers.put("Cache-Control", "no-store");
+                    return new WebResourceResponse(mime, "UTF-8", 200, "OK", headers, in);
+                  } catch (Exception e) {
+                    return empty404();
+                  }
+                }
+
+                private WebResourceResponse empty404() {
+                  return new WebResourceResponse("text/plain", "UTF-8", 404, "Not Found", new HashMap<>(),
+                    new java.io.ByteArrayInputStream(new byte[0]));
+                }
+
+                private String mimeFor(String path) {
+                  String p = path.toLowerCase(Locale.ROOT);
+                  if (p.endsWith(".html")) return "text/html";
+                  if (p.endsWith(".js")) return "application/javascript";
+                  if (p.endsWith(".wasm")) return "application/wasm";
+                  if (p.endsWith(".nds")) return "application/octet-stream";
+                  if (p.endsWith(".css")) return "text/css";
+                  return "application/octet-stream";
+                }
+              });
+
+              setContentView(web);
+              web.loadUrl("https://app.local/index.html");
+            }
+
+            @Override
+            public void onBackPressed() {
+              if (web != null && web.canGoBack()) web.goBack();
+              else super.onBackPressed();
+            }
+
+            @Override
+            protected void onDestroy() {
+              if (web != null) {
+                web.loadUrl("about:blank");
+                web.stopLoading();
+                web.destroy();
+                web = null;
+              }
+              super.onDestroy();
+            }
+          }
+          JAVA
+
+          cat > android/app/src/main/assets/index.html <<'HTML'
+          <!doctype html>
+          <html lang="fr">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+            <title>Professor Layton</title>
+            <style>
+              html,body{margin:0;background:#140d09;color:#f1dfb8;font-family:system-ui,sans-serif;height:100%;overflow:hidden}
+              body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
+              #bar{height:58px;display:flex;align-items:center;justify-content:center;width:100%;font-weight:700;letter-spacing:.4px;background:#24170f;border-bottom:1px solid #6f5334}
+              #status{font-size:13px;font-weight:500;margin-left:10px;opacity:.8}
+              #wrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;overflow:auto}
+              desmond-player{display:block;max-width:100vw;max-height:calc(100vh - 58px);touch-action:none}
+              #error{display:none;padding:20px;max-width:680px;line-height:1.45;color:#ffd0c8}
+            </style>
+          </head>
+          <body>
+            <div id="bar">Professor Layton <span id="status">Chargement…</span></div>
+            <div id="wrap"><desmond-player id="player"></desmond-player><div id="error"></div></div>
+            <script src="desmond.min.js"></script>
+            <script>
+              const status = document.getElementById('status');
+              const errorBox = document.getElementById('error');
+              function fail(e){
+                status.textContent='Erreur';
+                errorBox.style.display='block';
+                errorBox.textContent='Erreur émulateur : '+(e && e.message ? e.message : e);
+              }
+              window.addEventListener('error', e => fail(e.error || e.message));
+              window.addEventListener('unhandledrejection', e => fail(e.reason || 'Erreur inconnue'));
+              window.addEventListener('load', () => {
+                try {
+                  const player = document.getElementById('player');
+                  status.textContent='Chargement du jeu…';
+                  player.loadURL('https://app.local/game.nds', () => {
+                    status.textContent='Prêt';
+                  });
+                } catch(e) { fail(e); }
+              });
+            </script>
+          </body>
+          </html>
+          HTML
+
+          printf 'placeholder' > android/app/src/main/assets/game.nds
+
+          curl -fL --retry 3 -o android/app/src/main/assets/desmond.min.js             https://raw.githubusercontent.com/js-emulators/desmond/main/dist/desmond.min.js
+          curl -fL --retry 3 -o android/app/src/main/assets/desmond.wasm             https://raw.githubusercontent.com/js-emulators/desmond/main/dist/desmond.wasm
+
+      - name: Build debug APK
+        run: gradle -p android assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Layton-clean-wrapper
+          path: android/app/build/outputs/apk/debug/app-debug.apk

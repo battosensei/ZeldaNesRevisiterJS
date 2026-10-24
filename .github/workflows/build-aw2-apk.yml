@@ -34,7 +34,7 @@ jobs:
           set -euo pipefail
           DATA="aw2apk/app/src/main/assets/www/data"
           rm -rf "$DATA"
-          mkdir -p "$DATA/cores"
+          mkdir -p "$DATA/cores/reports"
           BASE="https://cdn.emulatorjs.org/stable/data"
           curl -fL --retry 5 --retry-delay 2 "$BASE/loader.js" -o "$DATA/loader.js"
           curl -fL --retry 5 --retry-delay 2 "$BASE/emulator.min.js" -o "$DATA/emulator.min.js"
@@ -47,6 +47,7 @@ jobs:
           do
             curl -fL --retry 5 --retry-delay 2 "$BASE/cores/$CORE" -o "$DATA/cores/$CORE"
           done
+          curl -fL --retry 5 --retry-delay 2 "$BASE/cores/reports/mgba.json" -o "$DATA/cores/reports/mgba.json"
           truncate -s 8388608 aw2apk/app/src/main/assets/www/game.gba
 
       - name: Build unsigned release APK

@@ -1,12 +1,13 @@
-name: Build Native Pokémon Émeraude APK
+name: Build Pokémon Émeraude Team APK
 
 on:
   push:
     branches:
-      - chat/pokemon-emeraude-native-apk-20261024
+      - chat/pokemon-emeraude-team-special-20261025
     paths:
       - ".github/workflows/build-aw2-native.yml"
       - "tools/patch-aw2-native.py"
+      - "tools/EmeraldSaveBuilder/**"
   workflow_dispatch:
 
 permissions:
@@ -15,7 +16,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Checkout wrapper repo
         uses: actions/checkout@v4
@@ -29,10 +30,40 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
+      - name: Checkout PKHeX
+        uses: actions/checkout@v4
+        with:
+          repository: kwsch/PKHeX
+          ref: master
+          path: pkhex
+          fetch-depth: 1
+
+      - name: Checkout Emerald base save
+        uses: actions/checkout@v4
+        with:
+          repository: Bl1ndBeholder/pokemon-saves
+          ref: main
+          path: pokesaves
+          fetch-depth: 1
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Generate special Pokémon Emerald save
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p native/android/app/src/main/assets
+          dotnet run --configuration Release --project tools/EmeraldSaveBuilder/EmeraldSaveBuilder.csproj -- \
+            pokesaves/emerald/011020251345.sav \
+            native/android/app/src/main/assets/initial.sav
+          test "$(stat -c%s native/android/app/src/main/assets/initial.sav)" -eq 131072
 
       - name: Install Android native toolchain
         shell: bash
@@ -44,6 +75,13 @@ jobs:
       - name: Patch native app
         run: python3 tools/patch-aw2-native.py native/android
 
+      - name: Verify bundled assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(stat -c%s native/android/app/src/main/assets/game.gba)" -eq 16777216
+          test "$(stat -c%s native/android/app/src/main/assets/initial.sav)" -eq 131072
+
       - name: Build native mGBA APK
         shell: bash
         run: |
@@ -51,20 +89,19 @@ jobs:
           cd native
           ./android/gradlew -p android --no-daemon :app:assembleBenchmark
 
-      - name: Collect native APK and signing tools
+      - name: Collect APK and signing tools
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp native/android/app/build/outputs/apk/benchmark/app-benchmark.apk dist/Pokemon-Emeraude-native-placeholder.apk
+          cp native/android/app/build/outputs/apk/benchmark/app-benchmark.apk dist/Pokemon-Emeraude-Team-placeholder.apk
+          cp native/android/app/src/main/assets/initial.sav dist/Pokemon-Emeraude-Team-initial.sav
           BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/35.0.0"
           cp "$BUILD_TOOLS/lib/apksigner.jar" dist/apksigner.jar
-          cp "$BUILD_TOOLS/zipalign" dist/zipalign
-          chmod +x dist/zipalign
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pokemon-emeraude-native-tooling
+          name: pokemon-emeraude-team-tooling
           path: dist/
           if-no-files-found: error
           retention-days: 1

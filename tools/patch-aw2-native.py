@@ -52,14 +52,14 @@ old = """        library = new RomLibrary(getFilesDir());
         String requestedRomId = getIntent().getStringExtra(EXTRA_ROM_ID);"""
 new = """        library = new RomLibrary(getFilesDir());
         installBundledRom();
-        String requestedRomId = "pokemonemeraude";"""
+        String requestedRomId = "pokemonemeraudeteam";"""
 if old not in src:
     raise SystemExit("MainActivity startup block not found")
 src = src.replace(old, new)
 
 anchor = "    private void applyOrientation() {"
 method = """    private void installBundledRom() {
-        final String romId = "pokemonemeraude";
+        final String romId = "pokemonemeraudeteam";
         File directory = new File(getFilesDir(), "roms");
         if (!directory.isDirectory() && !directory.mkdirs()) {
             throw new IllegalStateException("Could not create ROM directory");
@@ -88,10 +88,35 @@ method = """    private void installBundledRom() {
                 throw new IllegalStateException("Could not finish bundled ROM install");
             }
         }
+        File saveDirectory = new File(getFilesDir(), "saves");
+        if (!saveDirectory.isDirectory() && !saveDirectory.mkdirs()) {
+            throw new IllegalStateException("Could not create save directory");
+        }
+        File saveDestination = new File(saveDirectory, romId + ".sav");
+        if (!saveDestination.isFile()) {
+            File saveTemporary = new File(saveDirectory, romId + ".sav.tmp");
+            try (InputStream in = getAssets().open("initial.sav");
+                 FileOutputStream out = new FileOutputStream(saveTemporary)) {
+                byte[] buffer = new byte[64 * 1024];
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                }
+                out.getFD().sync();
+            } catch (IOException e) {
+                saveTemporary.delete();
+                throw new IllegalStateException("Could not install bundled save", e);
+            }
+            if (!saveTemporary.renameTo(saveDestination)) {
+                saveTemporary.delete();
+                throw new IllegalStateException("Could not finish bundled save install");
+            }
+        }
+
         try {
             library.record(
                 romId,
-                "Pokémon Émeraude",
+                "Pokémon Émeraude Team",
                 RomSystem.GBA,
                 System.currentTimeMillis());
         } catch (IOException e) {
@@ -108,12 +133,12 @@ java.write_text(src.replace(anchor, method + anchor))
 
 strings = root / "app/src/main/res/values/strings.xml"
 s = strings.read_text()
-s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Pokémon Émeraude</string>")
+s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Pokémon Émeraude Team</string>")
 strings.write_text(s)
 
 gradle = root / "app/build.gradle"
 g = gradle.read_text()
-g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.pokemonemeraudenative'")
+g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.pokemonemeraudeteam'")
 marker = "    buildTypes {"
 if marker not in g:
     raise SystemExit("Gradle buildTypes marker not found")

@@ -108,12 +108,12 @@ java.write_text(src.replace(anchor, method + anchor))
 
 strings = root / "app/src/main/res/values/strings.xml"
 s = strings.read_text()
-s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">The Minish Cap</string>")
+s = s.replace("<string name=\"app_name\">Garnacha Boy</string>", "<string name=\"app_name\">Minish Cap Joystick</string>")
 strings.write_text(s)
 
 gradle = root / "app/build.gradle"
 g = gradle.read_text()
-g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.zeldaminishnative'")
+g = g.replace("applicationId 'com.trebuchetdynamics.garnacha'", "applicationId 'com.battosensei.zeldaminishjoypad'")
 marker = "    buildTypes {"
 if marker not in g:
     raise SystemExit("Gradle buildTypes marker not found")

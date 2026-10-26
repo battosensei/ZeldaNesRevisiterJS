@@ -150,4 +150,121 @@ bg.write_text("""<?xml version="1.0" encoding="utf-8"?>
 </resources>
 """)
 
+
+
+# Replace the visual D-pad with a circular virtual joystick while keeping
+# the same GBA directional key semantics (including diagonals).
+emulator_view = root / "app/src/main/java/com/trebuchetdynamics/emulator/app/EmulatorView.java"
+ev = emulator_view.read_text()
+
+ev = ev.replace(
+"""                    case DPAD:
+                        drawDpad(canvas, control.cx, control.cy, control.halfWidth, controlAlpha);
+                        break;""",
+"""                    case DPAD:
+                        drawJoystick(canvas, control.cx, control.cy, control.halfWidth, controlAlpha);
+                        break;"""
+)
+
+old_dpad = """    private void drawDpad(Canvas canvas, float cx, float cy, float radius, int alpha) {
+        int directions = MgbaSession.KEY_UP | MgbaSession.KEY_DOWN
+                | MgbaSession.KEY_LEFT | MgbaSession.KEY_RIGHT;
+        paint.setColor((visualKeys() & directions) != 0
+                ? CONTROL_PRESSED_COLOR : CONTROL_COLOR);
+        paint.setAlpha(alpha);
+        paint.setStyle(Paint.Style.FILL);
+        float arm = radius * 0.42f;
+        canvas.drawRoundRect(cx - arm, cy - radius, cx + arm, cy + radius, 14, 14, paint);
+        canvas.drawRoundRect(cx - radius, cy - arm, cx + radius, cy + arm, 14, 14, paint);
+        paint.setColor(Color.WHITE);
+        paint.setAlpha(alpha);
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTextSize(radius * 0.38f);
+        canvas.drawText("▲", cx, cy - radius * 0.48f, paint);
+        canvas.drawText("▼", cx, cy + radius * 0.73f, paint);
+        canvas.drawText("◀", cx - radius * 0.62f, cy + radius * 0.13f, paint);
+        canvas.drawText("▶", cx + radius * 0.62f, cy + radius * 0.13f, paint);
+    }"""
+
+new_joystick = """    private void drawJoystick(Canvas canvas, float cx, float cy, float radius, int alpha) {
+        int keys = visualKeys();
+        float dx = 0f;
+        float dy = 0f;
+        if ((keys & MgbaSession.KEY_LEFT) != 0) dx -= 1f;
+        if ((keys & MgbaSession.KEY_RIGHT) != 0) dx += 1f;
+        if ((keys & MgbaSession.KEY_UP) != 0) dy -= 1f;
+        if ((keys & MgbaSession.KEY_DOWN) != 0) dy += 1f;
+
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length > 0f) {
+            dx /= length;
+            dy /= length;
+        }
+
+        // Outer joystick gate.
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.rgb(45, 52, 62));
+        paint.setAlpha(Math.max(35, (int) (alpha * 0.78f)));
+        canvas.drawCircle(cx, cy, radius, paint);
+
+        // Subtle circular rim.
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(Math.max(3f, radius * 0.065f));
+        paint.setColor(Color.rgb(122, 136, 156));
+        paint.setAlpha(alpha);
+        canvas.drawCircle(cx, cy, radius * 0.86f, paint);
+
+        // Small dead-zone marker in the center.
+        paint.setStrokeWidth(Math.max(2f, radius * 0.035f));
+        paint.setColor(Color.rgb(92, 104, 122));
+        paint.setAlpha(Math.max(30, (int) (alpha * 0.68f)));
+        canvas.drawCircle(cx, cy, radius * 0.20f, paint);
+
+        // Movable thumb stick. It snaps to 8 GBA directions, so diagonals remain precise.
+        float travel = radius * 0.46f;
+        float knobX = cx + dx * travel;
+        float knobY = cy + dy * travel;
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(length > 0f ? CONTROL_PRESSED_COLOR : CONTROL_COLOR);
+        paint.setAlpha(alpha);
+        canvas.drawCircle(knobX, knobY, radius * 0.40f, paint);
+
+        // Inner highlight for depth/readability.
+        paint.setColor(Color.argb(Math.min(255, alpha), 190, 205, 225));
+        canvas.drawCircle(knobX - radius * 0.08f, knobY - radius * 0.08f, radius * 0.10f, paint);
+        paint.setStyle(Paint.Style.FILL);
+    }"""
+
+if old_dpad not in ev:
+    raise SystemExit("EmulatorView drawDpad block not found")
+ev = ev.replace(old_dpad, new_joystick)
+emulator_view.write_text(ev)
+
+control_layout = root / "app/src/main/java/com/trebuchetdynamics/emulator/app/ControlLayout.java"
+cl = control_layout.read_text()
+
+old_contains = """            if (shape == Shape.CIRCLE) {
+                float nx = dx / halfWidth;
+                float ny = dy / halfHeight;
+                return nx * nx + ny * ny <= 1f;
+            }
+            return Math.abs(dx) <= halfWidth && Math.abs(dy) <= halfHeight;"""
+new_contains = """            if (shape == Shape.CIRCLE || shape == Shape.DPAD) {
+                float nx = dx / halfWidth;
+                float ny = dy / halfHeight;
+                float limit = shape == Shape.DPAD ? 1.12f : 1f;
+                return nx * nx + ny * ny <= limit;
+            }
+            return Math.abs(dx) <= halfWidth && Math.abs(dy) <= halfHeight;"""
+if old_contains not in cl:
+    raise SystemExit("ControlLayout contains block not found")
+cl = cl.replace(old_contains, new_contains)
+
+# Slightly larger landscape joystick and a calmer center dead-zone.
+cl = cl.replace("float dpadHalf = unit * 0.20f;", "float dpadHalf = unit * 0.225f;")
+cl = cl.replace("float dead = control.halfWidth * 0.18f;", "float dead = control.halfWidth * 0.22f;")
+control_layout.write_text(cl)
+
+print("Virtual joystick patch applied")
+
 print("Native Zelda Minish Cap patch applied")
